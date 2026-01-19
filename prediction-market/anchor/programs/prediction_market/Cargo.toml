@@ -1,0 +1,25 @@
+[package]
+name = "prediction_market"
+version = "0.1.0"
+description = "Minimal prediction market program"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "prediction_market"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+idl-build = ["anchor-lang/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+
+# Dev dependencies temporarily commented due to edition2024 compatibility
+# [dev-dependencies]
+# litesvm = "=0.6.1"
+# solana-sdk = "=2.2.1"
