@@ -1,0 +1,538 @@
+{
+  "address": "5inXknRB7Vz9yXYme7mycL2z3GYQ5frRgozMciUmn7Bd",
+  "metadata": {
+    "name": "stablecoin",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "burn_tokens",
+      "docs": [
+        "Burn stablecoins from the caller's account",
+        "Anyone can burn their own tokens",
+        "In a real stablecoin, this would be called when users redeem for fiat"
+      ],
+      "discriminator": [76, 15, 51, 254, 229, 215, 121, 66],
+      "accounts": [
+        {
+          "name": "owner",
+          "docs": ["The owner of the token account burning tokens"],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": ["The config account"],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "docs": ["The stablecoin mint"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_account",
+          "docs": ["The token account to burn from"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "configure_minter",
+      "docs": [
+        "Configure a minter with a specific allowance",
+        "Only the admin can call this instruction",
+        "If the minter already exists, this updates their allowance"
+      ],
+      "discriminator": [182, 155, 212, 100, 11, 175, 51, 242],
+      "accounts": [
+        {
+          "name": "admin",
+          "docs": ["Only the admin can configure minters"],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "minter",
+          "docs": ["The minter being configured"]
+        },
+        {
+          "name": "minter_config",
+          "docs": ["The minter's configuration account"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116, 101, 114]
+              },
+              {
+                "kind": "account",
+                "path": "minter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "allowance",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Initialize the stablecoin mint and config",
+        "This creates a new token mint with the program PDA as the mint authority"
+      ],
+      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": ["The config account that stores stablecoin settings"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "The stablecoin mint",
+            "The config PDA is set as both mint authority and freeze authority"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "mint_tokens",
+      "docs": [
+        "Mint new stablecoins to a user",
+        "Only authorized minters can call this instruction",
+        "The minter must have sufficient allowance remaining"
+      ],
+      "discriminator": [59, 132, 24, 246, 122, 39, 8, 243],
+      "accounts": [
+        {
+          "name": "minter",
+          "docs": ["The minter calling this instruction"],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": ["The config account"],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "minter_config",
+          "docs": ["The minter's configuration - verifies they are authorized"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116, 101, 114]
+              },
+              {
+                "kind": "account",
+                "path": "minter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "docs": ["The stablecoin mint"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116]
+              }
+            ]
+          }
+        },
+        {
+          "name": "destination",
+          "docs": ["The destination token account to mint to"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "destination_owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
+        },
+        {
+          "name": "destination_owner"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "pause",
+      "docs": [
+        "Pause all minting operations",
+        "Only the admin can call this instruction"
+      ],
+      "discriminator": [211, 22, 221, 251, 74, 121, 193, 47],
+      "accounts": [
+        {
+          "name": "admin",
+          "docs": ["Only the admin can pause"],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "remove_minter",
+      "docs": [
+        "Remove a minter's authorization",
+        "Only the admin can call this instruction",
+        "This closes the minter config account and returns rent to admin"
+      ],
+      "discriminator": [241, 69, 84, 16, 164, 232, 131, 79],
+      "accounts": [
+        {
+          "name": "admin",
+          "docs": ["Only the admin can remove minters"],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        },
+        {
+          "name": "minter",
+          "docs": ["The minter being removed"]
+        },
+        {
+          "name": "minter_config",
+          "docs": ["The minter's configuration account to close"],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [109, 105, 110, 116, 101, 114]
+              },
+              {
+                "kind": "account",
+                "path": "minter"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "unpause",
+      "docs": [
+        "Unpause minting operations",
+        "Only the admin can call this instruction"
+      ],
+      "discriminator": [169, 144, 4, 38, 10, 141, 188, 255],
+      "accounts": [
+        {
+          "name": "admin",
+          "docs": ["Only the admin can unpause"],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 111, 110, 102, 105, 103]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
+    },
+    {
+      "name": "MinterConfig",
+      "discriminator": [78, 211, 23, 6, 233, 19, 19, 236]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "You are not authorized to perform this action"
+    },
+    {
+      "code": 6001,
+      "name": "Paused",
+      "msg": "Minting is currently paused"
+    },
+    {
+      "code": 6002,
+      "name": "ExceedsAllowance",
+      "msg": "Mint amount exceeds minter's remaining allowance"
+    },
+    {
+      "code": 6003,
+      "name": "NotMinter",
+      "msg": "Account is not an authorized minter"
+    },
+    {
+      "code": 6004,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    }
+  ],
+  "types": [
+    {
+      "name": "Config",
+      "docs": ["Config account that stores the stablecoin configuration"],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "docs": [
+              "The admin who can configure minters and blacklist accounts"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "docs": ["The mint address of the stablecoin"],
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "docs": ["Whether minting is paused"],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": ["Bump seed for the config PDA"],
+            "type": "u8"
+          },
+          {
+            "name": "mint_bump",
+            "docs": ["Bump seed for the mint PDA"],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MinterConfig",
+      "docs": [
+        "Minter configuration account",
+        "Each authorized minter has their own config with an allowance"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "minter",
+            "docs": ["The minter's public key"],
+            "type": "pubkey"
+          },
+          {
+            "name": "allowance",
+            "docs": ["Maximum amount the minter can mint (total)"],
+            "type": "u64"
+          },
+          {
+            "name": "amount_minted",
+            "docs": ["Amount already minted by this minter"],
+            "type": "u64"
+          },
+          {
+            "name": "is_initialized",
+            "docs": ["Whether this account has been initialized"],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": ["Bump seed for this PDA"],
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

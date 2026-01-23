@@ -1,0 +1,32 @@
+# Anchor/Solana
+target/
+.anchor/
+test-ledger/
+.DS_Store
+
+# Node
+node_modules/
+dist/
+.yarn/
+
+# IDEs
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.so
+deploy/
+
+# Test artifacts
+.test-ledger/
