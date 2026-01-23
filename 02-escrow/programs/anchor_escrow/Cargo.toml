@@ -1,0 +1,30 @@
+[package]
+name = "anchor-escrow"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "anchor_escrow"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "1.0.0-rc.2", features = ["init-if-needed"] }
+anchor-spl = "1.0.0-rc.2"
+
+[dev-dependencies]
+litesvm = "0.8.2"
+litesvm-token = "0.8.2"
+solana-sdk = "~3.0"
+spl-associated-token-account = "8.0.0"
+borsh = "1.5"
+sha2 = "0.10"
+solana-program-pack = "~3.0"
