@@ -1,0 +1,158 @@
+{
+  "labubus": [
+    {
+      "id": 1,
+      "name": "Zone Out Labubu",
+      "symbol": "LABU1",
+      "description": "Labubu Lazy Yoga - Zone Out Edition",
+      "image": "/labubu/labubu-1.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Green" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Ab Roller Labubu",
+      "symbol": "LABU2",
+      "description": "Labubu Lazy Yoga - Ab Roller Edition",
+      "image": "/labubu/labubu-2.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Light Pink" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Confident Labubu",
+      "symbol": "LABU3",
+      "description": "Labubu Lazy Yoga - Confident Edition",
+      "image": "/labubu/labubu-3.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Pink" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Show Off Labubu",
+      "symbol": "LABU4",
+      "description": "Labubu Lazy Yoga - Show Off Edition",
+      "image": "/labubu/labubu-4.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Sky Blue" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Stretch Out Labubu",
+      "symbol": "LABU5",
+      "description": "Labubu Lazy Yoga - Stretch Out Edition",
+      "image": "/labubu/labubu-5.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Blue" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Sweating Labubu",
+      "symbol": "LABU6",
+      "description": "Labubu Lazy Yoga - Sweating Edition",
+      "image": "/labubu/labubu-6.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Pink" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Sleeping Labubu",
+      "symbol": "LABU7",
+      "description": "Labubu Lazy Yoga - Sleeping Edition",
+      "image": "/labubu/labubu-7.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Light Pink" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Little Bird Labubu",
+      "symbol": "LABU8",
+      "description": "Labubu Lazy Yoga - Little Bird Edition",
+      "image": "/labubu/labubu-8.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Purple" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Americano Labubu",
+      "symbol": "LABU9",
+      "description": "Labubu Lazy Yoga - Americano Edition",
+      "image": "/labubu/labubu-9.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "Night Blue" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Lay Down Labubu",
+      "symbol": "LABU10",
+      "description": "Labubu Lazy Yoga - Lay Down Edition",
+      "image": "/labubu/labubu-10.png",
+      "supply": 120,
+      "rarity": "common",
+      "attributes": [
+        { "trait_type": "Color", "value": "White" },
+        { "trait_type": "Rarity", "value": "Common" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "Secret Edition Labubu",
+      "symbol": "LABU11",
+      "description": "Labubu Lazy Yoga - Secret Edition - 1/120 Hidden Rare",
+      "image": "/labubu/labubu-11.png",
+      "supply": 6,
+      "rarity": "legendary",
+      "attributes": [
+        { "trait_type": "Color", "value": "Brown" },
+        { "trait_type": "Rarity", "value": "Legendary" },
+        { "trait_type": "Edition", "value": "Lazy Yoga" }
+      ]
+    }
+  ]
+}

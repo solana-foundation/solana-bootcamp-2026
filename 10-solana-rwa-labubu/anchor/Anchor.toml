@@ -1,0 +1,19 @@
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.devnet]
+vault = "6RSKyunojsMYHZQWzeP6SPGXnmZwjHAcPcbEumk7Cw2g"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+initialize = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/initialize.ts"
+test = "pnpm exec ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

@@ -1,0 +1,358 @@
+
+> nextjs-anchor@0.0.0 setup
+> npm run anchor-build && npm run codama:js
+
+
+> nextjs-anchor@0.0.0 anchor-build
+> cd anchor && anchor build
+
+Updating program ids...
+Found incorrect program id declaration in "/Users/maqiyuan/solana/solana-rwa-demo/anchor/programs/vault/src/lib.rs"
+Updated to B6HTnuN4RgoEnsxWFm74TVXdHEQb7fSjguzovQQjZseY
+
+Found incorrect program id declaration in Anchor.toml for the program `vault`
+Updated to B6HTnuN4RgoEnsxWFm74TVXdHEQb7fSjguzovQQjZseY
+
+All program id declarations are synced.
+Please rebuild the program to update the generated artifacts.
+
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded cfg-if v1.0.4
+  Downloaded borsh v1.6.0
+  Downloaded find-msvc-tools v0.1.6
+  Downloaded bitflags v2.10.0
+  Downloaded semver v1.0.27
+  Downloaded indexmap v2.13.0
+  Downloaded crypto-mac v0.8.0
+  Downloaded itoa v1.0.17
+  Downloaded proc-macro-crate v3.4.0
+  Downloaded zeroize_derive v1.4.3
+  Downloaded crypto-common v0.1.7
+  Downloaded solana-vote-interface v2.2.1
+  Downloaded serde_bytes v0.11.19
+  Downloaded bytemuck_derive v1.10.2
+  Downloaded hmac-drbg v0.3.0
+  Downloaded toml_datetime v0.7.5+spec-1.1.0
+  Downloaded zmij v1.0.12
+  Downloaded unicode-ident v1.0.22
+  Downloaded quote v1.0.43
+  Downloaded typenum v1.19.0
+  Downloaded serde_core v1.0.228
+  Downloaded serde v1.0.228
+  Downloaded memchr v2.7.6
+  Downloaded serde_json v1.0.149
+  Downloaded winnow v0.7.14
+  Downloaded hashbrown v0.16.1
+  Downloaded zerocopy v0.8.33
+  Downloaded syn v2.0.114
+  Downloaded libc v0.2.179
+  Downloaded cc v1.2.51
+  Downloaded toml_edit v0.23.10+spec-1.0.0
+  Downloaded serde_derive v1.0.228
+  Downloaded proc-macro2 v1.0.105
+  Downloaded log v0.4.29
+  Downloaded bytemuck v1.24.0
+  Downloaded anyhow v1.0.100
+  Downloaded getrandom v0.3.4
+  Downloaded zeroize v1.8.2
+  Downloaded toml_parser v1.0.6+spec-1.1.0
+  Downloaded thiserror-impl v2.0.17
+  Downloaded solana-pubkey v2.2.1
+  Downloaded solana-message v2.2.1
+  Downloaded hmac v0.8.1
+  Downloaded borsh-derive v1.6.0
+  Downloaded thiserror v2.0.17
+   Compiling proc-macro2 v1.0.105
+   Compiling unicode-ident v1.0.22
+   Compiling quote v1.0.43
+   Compiling version_check v0.9.5
+   Compiling serde_core v1.0.228
+   Compiling typenum v1.19.0
+   Compiling serde v1.0.228
+   Compiling syn v1.0.109
+   Compiling winnow v0.7.14
+   Compiling generic-array v0.14.7
+   Compiling equivalent v1.0.2
+   Compiling hashbrown v0.16.1
+   Compiling toml_datetime v0.7.5+spec-1.1.0
+   Compiling cfg-if v1.0.4
+   Compiling autocfg v1.5.0
+   Compiling cfg_aliases v0.2.1
+   Compiling borsh v1.6.0
+   Compiling indexmap v2.13.0
+   Compiling syn v2.0.114
+   Compiling toml_parser v1.0.6+spec-1.1.0
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling once_cell v1.21.3
+   Compiling subtle v2.6.1
+   Compiling solana-define-syscall v2.2.1
+   Compiling toml_edit v0.23.10+spec-1.0.0
+   Compiling digest v0.10.7
+   Compiling zerocopy v0.8.33
+   Compiling ahash v0.8.12
+   Compiling num-traits v0.2.19
+   Compiling bs58 v0.5.1
+   Compiling bytemuck v1.24.0
+   Compiling proc-macro-crate v3.4.0
+   Compiling solana-atomic-u64 v2.2.1
+   Compiling solana-sanitize v2.2.1
+   Compiling sha2 v0.10.9
+   Compiling five8_core v0.1.2
+   Compiling five8_const v0.1.4
+   Compiling libc v0.2.179
+   Compiling solana-decode-error v2.3.0
+   Compiling anyhow v1.0.100
+   Compiling zmij v1.0.12
+   Compiling thiserror v1.0.69
+   Compiling serde_json v1.0.149
+   Compiling hashbrown v0.13.2
+   Compiling solana-msg v2.2.1
+   Compiling unicode-segmentation v1.12.0
+   Compiling itoa v1.0.17
+   Compiling cpufeatures v0.2.17
+   Compiling memchr v2.7.6
+   Compiling solana-program-memory v2.2.1
+   Compiling heck v0.3.3
+   Compiling find-msvc-tools v0.1.6
+   Compiling shlex v1.3.0
+   Compiling borsh-derive-internal v0.10.4
+   Compiling borsh-schema-derive-internal v0.10.4
+   Compiling cc v1.2.51
+   Compiling feature-probe v0.1.1
+   Compiling bv v0.11.1
+   Compiling serde_bytes v0.11.19
+   Compiling arrayref v0.3.9
+   Compiling arrayvec v0.7.6
+   Compiling thiserror v2.0.17
+   Compiling log v0.4.29
+   Compiling constant_time_eq v0.3.1
+   Compiling memoffset v0.9.1
+   Compiling lazy_static v1.5.0
+   Compiling keccak v0.1.5
+   Compiling sha3 v0.10.8
+   Compiling solana-big-mod-exp v2.2.1
+   Compiling getrandom v0.2.16
+   Compiling solana-program-option v2.2.1
+   Compiling solana-native-token v2.2.1
+   Compiling base64 v0.21.7
+   Compiling blake3 v1.8.2
+   Compiling serde_derive v1.0.228
+   Compiling borsh-derive v1.6.0
+   Compiling bytemuck_derive v1.10.2
+   Compiling solana-sdk-macro v2.2.1
+   Compiling thiserror-impl v1.0.69
+   Compiling thiserror-impl v2.0.17
+   Compiling num-derive v0.4.2
+   Compiling anchor-derive-space v0.31.1
+   Compiling solana-secp256k1-recover v2.2.1
+   Compiling solana-hash v2.2.1
+   Compiling bincode v1.3.3
+   Compiling solana-fee-calculator v2.2.1
+   Compiling solana-short-vec v2.2.1
+   Compiling solana-serde-varint v2.2.2
+   Compiling toml v0.5.11
+   Compiling anchor-syn v0.31.1
+   Compiling anchor-lang-idl-spec v0.1.0
+   Compiling solana-sha256-hasher v2.2.1
+   Compiling solana-blake3-hasher v2.2.1
+   Compiling solana-keccak-hasher v2.2.1
+   Compiling anchor-lang-idl v0.1.2
+   Compiling proc-macro-crate v0.1.5
+   Compiling borsh-derive v0.10.4
+   Compiling borsh v0.10.4
+   Compiling solana-pubkey v2.2.1
+   Compiling solana-borsh v2.2.1
+   Compiling solana-instruction v2.2.1
+   Compiling solana-sdk-ids v2.2.1
+   Compiling solana-nonce v2.2.1
+   Compiling solana-sysvar-id v2.2.1
+   Compiling solana-clock v2.2.1
+   Compiling solana-rent v2.2.1
+   Compiling solana-slot-hashes v2.2.1
+   Compiling solana-epoch-schedule v2.2.1
+   Compiling solana-epoch-rewards v2.2.1
+   Compiling solana-program-error v2.2.2
+   Compiling solana-system-interface v1.0.0
+   Compiling solana-stable-layout v2.2.1
+   Compiling solana-serialize-utils v2.2.1
+   Compiling solana-bincode v2.2.1
+   Compiling solana-transaction-error v2.2.1
+   Compiling solana-account-info v2.2.1
+   Compiling solana-last-restart-slot v2.2.1
+   Compiling solana-slot-history v2.2.1
+   Compiling solana-program-pack v2.2.1
+   Compiling solana-address-lookup-table-interface v2.2.2
+   Compiling solana-loader-v2-interface v2.2.1
+   Compiling solana-cpi v2.2.1
+   Compiling solana-program-entrypoint v2.2.1
+   Compiling solana-stake-interface v1.2.1
+   Compiling solana-instructions-sysvar v2.2.2
+   Compiling solana-account v2.2.1
+   Compiling solana-message v2.2.1
+   Compiling solana-feature-gate-interface v2.2.2
+   Compiling solana-loader-v3-interface v3.0.0
+   Compiling solana-vote-interface v2.2.1
+   Compiling solana-loader-v4-interface v2.2.1
+   Compiling solana-sysvar v2.2.1
+   Compiling solana-program v2.2.1
+   Compiling anchor-attribute-error v0.31.1
+   Compiling anchor-attribute-event v0.31.1
+   Compiling anchor-attribute-access-control v0.31.1
+   Compiling anchor-attribute-constant v0.31.1
+   Compiling anchor-attribute-account v0.31.1
+   Compiling anchor-derive-serde v0.31.1
+   Compiling anchor-derive-accounts v0.31.1
+   Compiling anchor-attribute-program v0.31.1
+   Compiling anchor-lang v0.31.1
+   Compiling vault v0.1.0 (/Users/maqiyuan/solana/solana-rwa-demo/anchor/programs/vault)
+warning: unexpected `cfg` condition value: `custom-heap`
+ --> programs/vault/src/lib.rs:9:1
+  |
+9 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = help: consider adding `custom-heap` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: `#[warn(unexpected_cfgs)]` on by default
+  = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-panic`
+ --> programs/vault/src/lib.rs:9:1
+  |
+9 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = help: consider adding `custom-panic` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> programs/vault/src/lib.rs:9:1
+  |
+9 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> programs/vault/src/lib.rs:9:1
+  |
+9 | #[program]
+  | ^^^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/vault/src/lib.rs:56:10
+   |
+56 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: `vault` (lib) generated 10 warnings (5 duplicates)
+    Finished `release` profile [optimized] target(s) in 4m 07s
+   Compiling proc-macro2 v1.0.105
+   Compiling unicode-ident v1.0.22
+   Compiling quote v1.0.43
+   Compiling libc v0.2.179
+   Compiling cfg-if v1.0.4
+   Compiling version_check v0.9.5
+   Compiling typenum v1.19.0
+   Compiling serde_core v1.0.228
+   Compiling serde v1.0.228
+   Compiling generic-array v0.14.7
+   Compiling autocfg v1.5.0
+   Compiling subtle v2.6.1
+   Compiling hashbrown v0.16.1
+   Compiling equivalent v1.0.2
+   Compiling indexmap v2.13.0
+   Compiling syn v1.0.109
+   Compiling zerocopy v0.8.33
+   Compiling winnow v0.7.14
+   Compiling syn v2.0.114
+   Compiling once_cell v1.21.3
+   Compiling num-traits v0.2.19
+   Compiling getrandom v0.2.16
+   Compiling rand_core v0.6.4
+   Compiling block-buffer v0.10.4
+   Compiling cpufeatures v0.2.17
+   Compiling crypto-common v0.1.7
+   Compiling toml_datetime v0.7.5+spec-1.1.0
+   Compiling digest v0.10.7
+   Compiling getrandom v0.3.4
+   Compiling ahash v0.8.12
+   Compiling toml_parser v1.0.6+spec-1.1.0
+   Compiling cfg_aliases v0.2.1
+   Compiling borsh v1.6.0
+   Compiling solana-sanitize v2.2.1
+   Compiling bs58 v0.5.1
+   Compiling solana-atomic-u64 v2.2.1
+   Compiling semver v1.0.27
+   Compiling sha2 v0.10.9
+   Compiling toml_edit v0.23.10+spec-1.0.0
+   Compiling rustc_version v0.4.1
+   Compiling solana-decode-error v2.3.0
+   Compiling five8_core v0.1.2
+   Compiling five8_const v0.1.4
+   Compiling shlex v1.3.0
+   Compiling find-msvc-tools v0.1.6
+   Compiling lazy_static v1.5.0
+   Compiling ppv-lite86 v0.2.21
+   Compiling curve25519-dalek v4.1.3
+   Compiling cc v1.2.51
+   Compiling getrandom v0.1.16
+   Compiling rand_chacha v0.3.1
+   Compiling hashbrown v0.13.2
+   Compiling digest v0.9.0
+   Compiling proc-macro-crate v3.4.0
+   Compiling rand v0.8.5
+   Compiling rand_core v0.5.1
+   Compiling opaque-debug v0.3.1
+   Compiling block-buffer v0.9.0
+   Compiling rand_chacha v0.2.2
+   Compiling sha2 v0.9.9
+   Compiling fnv v1.0.7
+   Compiling byteorder v1.5.0
+   Compiling itoa v1.0.17
+   Compiling rand v0.7.3
+   Compiling log v0.4.29
+   Compiling memchr v2.7.6
+   Compiling signature v1.6.4
+   Compiling ed25519 v1.5.3
+   Compiling bitflags v2.10.0
+   Compiling zmij v1.0.12
+   Compiling serde_json v1.0.149
+   Compiling crunchy v0.2.4
+   Compiling solana-msg v2.2.1
+   Compiling synstructure v0.13.2
+   Compiling num-integer v0.1.46
+error[E0658]: use of unstable library feature `select_unpredictable`
+   --> /Users/maqiyuan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zmij-1.0.12/src/lib.rs:713:22
+    |
+713 |                 sig: hint::select_unpredictable(use_shorter, shorter, longer),
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: see issue #133962 <https://github.com/rust-lang/rust/issues/133962> for more information
+    = help: add `#![feature(select_unpredictable)]` to the crate attributes to enable
+    = note: this compiler was built on 2025-04-20; consider upgrading it if it is out of date
+
+   Compiling borsh-derive-internal v0.10.4
+   Compiling borsh-schema-derive-internal v0.10.4
+For more information about this error, try `rustc --explain E0658`.
+error: could not compile `zmij` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+Error: Building IDL failed. Run `ANCHOR_LOG=true anchor idl build` to see the logs.
