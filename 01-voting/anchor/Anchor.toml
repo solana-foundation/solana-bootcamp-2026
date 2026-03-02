@@ -1,0 +1,31 @@
+[toolchain]
+anchor_version = "1.0.0-rc.2"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+voting = "65KHV8cXwJ8apTKMqnpSdhdHkHhRySatgKMwnxm6C3gG"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn jest"
+
+[hooks]
+
+[test]
+startup_wait = 5000
+shutdown_wait = 2000
+upgradeable = false
+
+[test.validator]
+bind_address = "127.0.0.1"
+ledger = ".anchor/test-ledger"
+rpc_port = 8899
