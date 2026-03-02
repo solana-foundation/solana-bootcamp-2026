@@ -1,5 +1,5 @@
 {
-  "address": "5inXknRB7Vz9yXYme7mycL2z3GYQ5frRgozMciUmn7Bd",
+  "address": "rYXfi25x9JMgau82aGMJMVUokq7JzueqehiJUmwR97Q",
   "metadata": {
     "name": "stablecoin",
     "version": "0.1.0",
@@ -14,41 +14,70 @@
         "Anyone can burn their own tokens",
         "In a real stablecoin, this would be called when users redeem for fiat"
       ],
-      "discriminator": [76, 15, 51, 254, 229, 215, 121, 66],
+      "discriminator": [
+        76,
+        15,
+        51,
+        254,
+        229,
+        215,
+        121,
+        66
+      ],
       "accounts": [
         {
           "name": "owner",
-          "docs": ["The owner of the token account burning tokens"],
+          "docs": [
+            "The owner of the token account burning tokens"
+          ],
           "signer": true
         },
         {
           "name": "config",
-          "docs": ["The config account"],
+          "docs": [
+            "The config account"
+          ],
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
         },
         {
           "name": "mint",
-          "docs": ["The stablecoin mint"],
+          "docs": [
+            "The stablecoin mint"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [109, 105, 110, 116]
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
               }
             ]
           }
         },
         {
           "name": "token_account",
-          "docs": ["The token account to burn from"],
+          "docs": [
+            "The token account to burn from"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -59,9 +88,38 @@
               {
                 "kind": "const",
                 "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
                 ]
               },
               {
@@ -72,9 +130,38 @@
             "program": {
               "kind": "const",
               "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
               ]
             }
           }
@@ -98,11 +185,22 @@
         "Only the admin can call this instruction",
         "If the minter already exists, this updates their allowance"
       ],
-      "discriminator": [182, 155, 212, 100, 11, 175, 51, 242],
+      "discriminator": [
+        182,
+        155,
+        212,
+        100,
+        11,
+        175,
+        51,
+        242
+      ],
       "accounts": [
         {
           "name": "admin",
-          "docs": ["Only the admin can configure minters"],
+          "docs": [
+            "Only the admin can configure minters"
+          ],
           "writable": true,
           "signer": true
         },
@@ -112,24 +210,42 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
         },
         {
           "name": "minter",
-          "docs": ["The minter being configured"]
+          "docs": [
+            "The minter being configured"
+          ]
         },
         {
           "name": "minter_config",
-          "docs": ["The minter's configuration account"],
+          "docs": [
+            "The minter's configuration account"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [109, 105, 110, 116, 101, 114]
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
               },
               {
                 "kind": "account",
@@ -156,7 +272,16 @@
         "Initialize the stablecoin mint and config",
         "This creates a new token mint with the program PDA as the mint authority"
       ],
-      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
       "accounts": [
         {
           "name": "admin",
@@ -165,13 +290,22 @@
         },
         {
           "name": "config",
-          "docs": ["The config account that stores stablecoin settings"],
+          "docs": [
+            "The config account that stores stablecoin settings"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -187,7 +321,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [109, 105, 110, 116]
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
               }
             ]
           }
@@ -210,35 +349,64 @@
         "Only authorized minters can call this instruction",
         "The minter must have sufficient allowance remaining"
       ],
-      "discriminator": [59, 132, 24, 246, 122, 39, 8, 243],
+      "discriminator": [
+        59,
+        132,
+        24,
+        246,
+        122,
+        39,
+        8,
+        243
+      ],
       "accounts": [
         {
           "name": "minter",
-          "docs": ["The minter calling this instruction"],
+          "docs": [
+            "The minter calling this instruction"
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "config",
-          "docs": ["The config account"],
+          "docs": [
+            "The config account"
+          ],
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
         },
         {
           "name": "minter_config",
-          "docs": ["The minter's configuration - verifies they are authorized"],
+          "docs": [
+            "The minter's configuration - verifies they are authorized"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [109, 105, 110, 116, 101, 114]
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
               },
               {
                 "kind": "account",
@@ -249,20 +417,29 @@
         },
         {
           "name": "mint",
-          "docs": ["The stablecoin mint"],
+          "docs": [
+            "The stablecoin mint"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [109, 105, 110, 116]
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
               }
             ]
           }
         },
         {
           "name": "destination",
-          "docs": ["The destination token account to mint to"],
+          "docs": [
+            "The destination token account to mint to"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -273,9 +450,38 @@
               {
                 "kind": "const",
                 "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
                 ]
               },
               {
@@ -286,9 +492,38 @@
             "program": {
               "kind": "const",
               "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
               ]
             }
           }
@@ -322,11 +557,22 @@
         "Pause all minting operations",
         "Only the admin can call this instruction"
       ],
-      "discriminator": [211, 22, 221, 251, 74, 121, 193, 47],
+      "discriminator": [
+        211,
+        22,
+        221,
+        251,
+        74,
+        121,
+        193,
+        47
+      ],
       "accounts": [
         {
           "name": "admin",
-          "docs": ["Only the admin can pause"],
+          "docs": [
+            "Only the admin can pause"
+          ],
           "signer": true
         },
         {
@@ -336,7 +582,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -351,11 +604,22 @@
         "Only the admin can call this instruction",
         "This closes the minter config account and returns rent to admin"
       ],
-      "discriminator": [241, 69, 84, 16, 164, 232, 131, 79],
+      "discriminator": [
+        241,
+        69,
+        84,
+        16,
+        164,
+        232,
+        131,
+        79
+      ],
       "accounts": [
         {
           "name": "admin",
-          "docs": ["Only the admin can remove minters"],
+          "docs": [
+            "Only the admin can remove minters"
+          ],
           "writable": true,
           "signer": true
         },
@@ -365,24 +629,42 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
         },
         {
           "name": "minter",
-          "docs": ["The minter being removed"]
+          "docs": [
+            "The minter being removed"
+          ]
         },
         {
           "name": "minter_config",
-          "docs": ["The minter's configuration account to close"],
+          "docs": [
+            "The minter's configuration account to close"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [109, 105, 110, 116, 101, 114]
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
               },
               {
                 "kind": "account",
@@ -400,11 +682,22 @@
         "Unpause minting operations",
         "Only the admin can call this instruction"
       ],
-      "discriminator": [169, 144, 4, 38, 10, 141, 188, 255],
+      "discriminator": [
+        169,
+        144,
+        4,
+        38,
+        10,
+        141,
+        188,
+        255
+      ],
       "accounts": [
         {
           "name": "admin",
-          "docs": ["Only the admin can unpause"],
+          "docs": [
+            "Only the admin can unpause"
+          ],
           "signer": true
         },
         {
@@ -414,7 +707,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -426,11 +726,29 @@
   "accounts": [
     {
       "name": "Config",
-      "discriminator": [155, 12, 170, 224, 30, 250, 204, 130]
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
     },
     {
       "name": "MinterConfig",
-      "discriminator": [78, 211, 23, 6, 233, 19, 19, 236]
+      "discriminator": [
+        78,
+        211,
+        23,
+        6,
+        233,
+        19,
+        19,
+        236
+      ]
     }
   ],
   "errors": [
@@ -463,7 +781,9 @@
   "types": [
     {
       "name": "Config",
-      "docs": ["Config account that stores the stablecoin configuration"],
+      "docs": [
+        "Config account that stores the stablecoin configuration"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -476,22 +796,30 @@
           },
           {
             "name": "mint",
-            "docs": ["The mint address of the stablecoin"],
+            "docs": [
+              "The mint address of the stablecoin"
+            ],
             "type": "pubkey"
           },
           {
             "name": "paused",
-            "docs": ["Whether minting is paused"],
+            "docs": [
+              "Whether minting is paused"
+            ],
             "type": "bool"
           },
           {
             "name": "bump",
-            "docs": ["Bump seed for the config PDA"],
+            "docs": [
+              "Bump seed for the config PDA"
+            ],
             "type": "u8"
           },
           {
             "name": "mint_bump",
-            "docs": ["Bump seed for the mint PDA"],
+            "docs": [
+              "Bump seed for the mint PDA"
+            ],
             "type": "u8"
           }
         ]
@@ -508,27 +836,37 @@
         "fields": [
           {
             "name": "minter",
-            "docs": ["The minter's public key"],
+            "docs": [
+              "The minter's public key"
+            ],
             "type": "pubkey"
           },
           {
             "name": "allowance",
-            "docs": ["Maximum amount the minter can mint (total)"],
+            "docs": [
+              "Maximum amount the minter can mint (total)"
+            ],
             "type": "u64"
           },
           {
             "name": "amount_minted",
-            "docs": ["Amount already minted by this minter"],
+            "docs": [
+              "Amount already minted by this minter"
+            ],
             "type": "u64"
           },
           {
             "name": "is_initialized",
-            "docs": ["Whether this account has been initialized"],
+            "docs": [
+              "Whether this account has been initialized"
+            ],
             "type": "bool"
           },
           {
             "name": "bump",
-            "docs": ["Bump seed for this PDA"],
+            "docs": [
+              "Bump seed for this PDA"
+            ],
             "type": "u8"
           }
         ]

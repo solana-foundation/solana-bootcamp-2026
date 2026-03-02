@@ -1,13 +1,12 @@
 use anchor_litesvm::{AnchorLiteSVM, Keypair, Pubkey, Signer};
-use anchor_spl::associated_token::get_associated_token_address;
 use litesvm_utils::{AssertionHelpers, TestHelpers};
 
 // Declare the program to generate client types
 anchor_lang::declare_program!(stablecoin);
 use self::stablecoin::{client, ID as PROGRAM_ID};
 
-// Program IDs
-const TOKEN_PROGRAM_ID: Pubkey = anchor_spl::token::ID;
+// Program IDs — Token-2022 (Token Extensions)
+const TOKEN_PROGRAM_ID: Pubkey = anchor_spl::token_2022::ID;
 const ASSOCIATED_TOKEN_PROGRAM_ID: Pubkey = anchor_spl::associated_token::ID;
 const SYSTEM_PROGRAM_ID: Pubkey = anchor_lang::system_program::ID;
 
@@ -17,6 +16,20 @@ fn setup_ctx() -> anchor_litesvm::AnchorContext {
         PROGRAM_ID,
         include_bytes!("../../../target/deploy/stablecoin.so"),
     )
+}
+
+// Helper to read Token-2022 account balance directly from raw bytes.
+// Both legacy SPL Token and Token-2022 share the same base layout:
+//   mint: Pubkey (32 bytes), owner: Pubkey (32 bytes), amount: u64 (8 bytes)
+// litesvm_utils::assert_token_balance uses the legacy spl_token unpacker which
+// rejects Token-2022 accounts, so we read the amount field at offset 64 directly.
+fn get_token_balance(ctx: &anchor_litesvm::AnchorContext, token_account: &Pubkey) -> u64 {
+    let account = ctx
+        .svm
+        .get_account(token_account)
+        .expect("Token account should exist");
+    let data = &account.data;
+    u64::from_le_bytes(data[64..72].try_into().unwrap())
 }
 
 // Helper to get PDAs
@@ -33,7 +46,12 @@ fn get_minter_config_pda(minter: &Pubkey) -> Pubkey {
 }
 
 fn get_ata(wallet: &Pubkey, mint: &Pubkey) -> Pubkey {
-    get_associated_token_address(wallet, mint)
+    // ATA seeds: [wallet, token_program_id, mint]
+    Pubkey::find_program_address(
+        &[wallet.as_ref(), TOKEN_PROGRAM_ID.as_ref(), mint.as_ref()],
+        &ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+    .0
 }
 
 // ============================================================================
@@ -391,7 +409,11 @@ fn test_mint_tokens() {
         ctx.account_exists(&destination_ata),
         "Destination token account should exist"
     );
-    ctx.svm.assert_token_balance(&destination_ata, mint_amount);
+    assert_eq!(
+        get_token_balance(&ctx, &destination_ata),
+        mint_amount,
+        "Destination token balance mismatch"
+    );
 }
 
 #[test]
@@ -559,7 +581,11 @@ fn test_burn_tokens() {
         .assert_success();
 
     // Verify remaining balance
-    ctx.svm.assert_token_balance(&user_ata, 50_000_000);
+    assert_eq!(
+        get_token_balance(&ctx, &user_ata),
+        50_000_000,
+        "User token balance after burn mismatch"
+    );
 }
 
 #[test]
@@ -806,7 +832,11 @@ fn test_mint_after_unpause() {
         .unwrap()
         .assert_success();
 
-    ctx.svm.assert_token_balance(&destination_ata, mint_amount);
+    assert_eq!(
+        get_token_balance(&ctx, &destination_ata),
+        mint_amount,
+        "Destination token balance after unpause mismatch"
+    );
 }
 
 // ============================================================================
@@ -861,7 +891,11 @@ fn test_full_stablecoin_flow() {
         .assert_success();
 
     // Verify user1 balance after burn
-    ctx.svm.assert_token_balance(&user1_ata, 50_000_000);
+    assert_eq!(
+        get_token_balance(&ctx, &user1_ata),
+        50_000_000,
+        "User1 token balance after burn mismatch"
+    );
 
     // 6. Pause and unpause
     pause_program(&mut ctx, &admin);
@@ -930,5 +964,9 @@ fn test_multiple_minters() {
         ctx.account_exists(&user_ata),
         "User should have token account"
     );
-    ctx.svm.assert_token_balance(&user_ata, 300_000_000);
+    assert_eq!(
+        get_token_balance(&ctx, &user_ata),
+        300_000_000,
+        "User token balance from multiple minters mismatch"
+    );
 }

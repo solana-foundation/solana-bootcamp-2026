@@ -1,17 +1,18 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount, mint_to, burn, MintTo, Burn},
+    token_2022::{Token2022, mint_to, burn, MintTo, Burn},
+    token_interface::{Mint, TokenAccount},
 };
 
-declare_id!("5inXknRB7Vz9yXYme7mycL2z3GYQ5frRgozMciUmn7Bd");
+declare_id!("rYXfi25x9JMgau82aGMJMVUokq7JzueqehiJUmwR97Q");
 
 #[program]
 pub mod stablecoin {
     use super::*;
 
     /// Initialize the stablecoin mint and config
-    /// This creates a new token mint with the program PDA as the mint authority
+    /// This creates a new Token-2022 mint with the program PDA as the mint authority
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         let config = &mut ctx.accounts.config;
         config.admin = ctx.accounts.admin.key();
@@ -73,10 +74,10 @@ pub mod stablecoin {
         // Create the signer seeds for the mint authority PDA
         let signer_seeds: &[&[&[u8]]] = &[&[b"config", &[config.bump]]];
 
-        // Mint tokens to the destination account
+        // Mint tokens to the destination account via Token-2022
         mint_to(
             CpiContext::new_with_signer(
-                ctx.accounts.token_program.key(),
+                anchor_spl::token_2022::ID,
                 MintTo {
                     mint: ctx.accounts.mint.to_account_info(),
                     to: ctx.accounts.destination.to_account_info(),
@@ -98,7 +99,7 @@ pub mod stablecoin {
     pub fn burn_tokens(ctx: Context<BurnTokens>, amount: u64) -> Result<()> {
         burn(
             CpiContext::new(
-                ctx.accounts.token_program.key(),
+                anchor_spl::token_2022::ID,
                 Burn {
                     mint: ctx.accounts.mint.to_account_info(),
                     from: ctx.accounts.token_account.to_account_info(),
@@ -138,7 +139,7 @@ pub mod stablecoin {
 #[account]
 #[derive(InitSpace)]
 pub struct Config {
-    /// The admin who can configure minters and blacklist accounts
+    /// The admin who can configure minters
     pub admin: Pubkey,
     /// The mint address of the stablecoin
     pub mint: Pubkey,
@@ -186,7 +187,7 @@ pub struct Initialize<'info> {
     )]
     pub config: Account<'info, Config>,
 
-    /// The stablecoin mint
+    /// The Token-2022 stablecoin mint
     /// The config PDA is set as both mint authority and freeze authority
     #[account(
         init,
@@ -197,9 +198,9 @@ pub struct Initialize<'info> {
         seeds = [b"mint"],
         bump
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
-    pub token_program: Program<'info, Token>,
+    pub token_program: Program<'info, Token2022>,
     pub system_program: Program<'info, System>,
 }
 
@@ -286,27 +287,28 @@ pub struct MintTokens<'info> {
     )]
     pub minter_config: Account<'info, MinterConfig>,
 
-    /// The stablecoin mint
+    /// The Token-2022 stablecoin mint
     #[account(
         mut,
         seeds = [b"mint"],
         bump = config.mint_bump
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
-    /// The destination token account to mint to
+    /// The destination Token-2022 token account (ATA) to mint to
     #[account(
         init_if_needed,
         payer = minter,
         associated_token::mint = mint,
         associated_token::authority = destination_owner,
+        associated_token::token_program = token_program,
     )]
-    pub destination: Account<'info, TokenAccount>,
+    pub destination: InterfaceAccount<'info, TokenAccount>,
 
     /// CHECK: The owner of the destination token account
     pub destination_owner: UncheckedAccount<'info>,
 
-    pub token_program: Program<'info, Token>,
+    pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
@@ -323,25 +325,25 @@ pub struct BurnTokens<'info> {
     )]
     pub config: Account<'info, Config>,
 
-    /// The stablecoin mint
+    /// The Token-2022 stablecoin mint
     #[account(
         mut,
         seeds = [b"mint"],
         bump = config.mint_bump
     )]
-    pub mint: Account<'info, Mint>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
-    /// The token account to burn from
+    /// The Token-2022 token account to burn from
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = owner,
+        associated_token::token_program = token_program,
     )]
-    pub token_account: Account<'info, TokenAccount>,
+    pub token_account: InterfaceAccount<'info, TokenAccount>,
 
-    pub token_program: Program<'info, Token>,
+    pub token_program: Program<'info, Token2022>,
 }
-
 
 #[derive(Accounts)]
 pub struct Pause<'info> {

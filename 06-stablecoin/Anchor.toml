@@ -1,13 +1,12 @@
 [toolchain]
 anchor_version = "1.0.0-rc.2"
-package_manager = "yarn"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-stablecoin = "5inXknRB7Vz9yXYme7mycL2z3GYQ5frRgozMciUmn7Bd"
+stablecoin = "rYXfi25x9JMgau82aGMJMVUokq7JzueqehiJUmwR97Q"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,6 +16,6 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "cargo test"
+test = "cargo test -p stablecoin"
 
 [hooks]
