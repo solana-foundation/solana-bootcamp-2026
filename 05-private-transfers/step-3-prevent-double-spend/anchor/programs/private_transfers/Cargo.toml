@@ -1,0 +1,33 @@
+[package]
+name = "private_transfers"
+version = "0.1.0"
+description = "Private transfers on Solana using ZK proofs"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "private_transfers"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+
+[dependencies]
+anchor-lang = { workspace = true }
+# NOTE: On-chain Poseidon is too expensive (~1.4M CU per hash tree update)
+# Roots are computed off-chain by clients using light-poseidon
+# The ZK proof ensures correctness of the root
+
+[dev-dependencies]
+anchor-litesvm = { workspace = true }
+litesvm = { workspace = true }
+solana-sdk = { workspace = true }
+sha2 = "0.10"
+
+[[test]]
+name = "litesvm_tests"
+path = "tests/litesvm_tests.rs"

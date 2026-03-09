@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build outputs
+dist/
+build/
+
+# Noir circuit outputs
+circuits/*/target/
+*.acir
+Prover.toml
+
+# Anchor
+anchor/.anchor/
+anchor/target/
+
+# Sunspot artifacts
+*.ccs
+*.pk
+*.vk
+*.proof
+*.pw
+*.gz
+*.so
+
+# Environment
+.env
+.env.local
+.env.*.local
+*-keypair.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test artifacts
+coverage/
+.nyc_output/
+test-ledger/
+
+# Solana
+.anchor/
+
+# Claude
+.claude/
+CLAUDE.md

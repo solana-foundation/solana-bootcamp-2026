@@ -1,0 +1,27 @@
+{
+  "name": "noir-solana-private-transfers",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Private transfers on Solana using Noir ZK proofs and Sunspot verification",
+  "scripts": {
+    "install:all": "bun install && cd frontend && bun install && cd ../tests && bun install",
+    "dev:frontend": "cd frontend && bun run dev",
+    "build:frontend": "cd frontend && bun run build",
+    "build:circuits": "cd circuits && nargo compile",
+    "test:circuits": "cd circuits && nargo test",
+    "build:anchor": "cd anchor && anchor build",
+    "test:anchor": "cd anchor && anchor test",
+    "test": "cd tests && bun test",
+    "setup:sunspot": "echo 'See CLAUDE.md for Sunspot setup instructions'",
+    "prove": "sunspot prove --circuit circuits/target/private_transfers.json",
+    "deploy:verifier": "sunspot deploy --circuit circuits/target/private_transfers.json"
+  },
+  "keywords": [
+    "solana",
+    "noir",
+    "zk",
+    "zero-knowledge",
+    "private-transfers",
+    "sunspot"
+  ]
+}
