@@ -44,19 +44,16 @@ anchor build
 ## Testing
 
 ```bash
-yarn install
-anchor test
+anchor build
+cargo test -p stableswap --test litesvm
 ```
 
-Rust unit tests cover invariant math, LP minting, adaptive fee escalation, and oracle peg checks. Full integration testing now requires local Pyth-compatible price feed fixtures:
+The integration suite is written in Rust and runs against `anchor-litesvm`. It provisions local SPL mints, ATAs, and raw Pyth-compatible oracle accounts inside LiteSVM to cover:
 - Pool initialization
-- Adding initial and subsequent liquidity
-- Swapping A→B and B→A
-- Dynamic fee protection on swaps
-- Oracle-enforced depeg pauses on swaps and deposits
-- Slippage protection on swaps and withdrawals
-- Removing liquidity
-- StableSwap vs constant-product efficiency comparison
+- Adding initial liquidity
+- Swapping through the `remaining_accounts` path
+- Oracle-enforced depeg pauses
+- Proportional liquidity withdrawal
 
 ## Instructions
 
@@ -94,7 +91,8 @@ Exchanges one token for the other using the StableSwap invariant. Fees are raise
 |----------|------|-------------|
 | `amount_in` | `u64` | Input token amount. |
 | `min_amount_out` | `u64` | Minimum output amount (slippage guard). |
-| `a_to_b` | `bool` | `true` for A→B, `false` for B→A. |
+| `input_index` | `u8` | Pool token index to sell. |
+| `output_index` | `u8` | Pool token index to receive. |
 
 ### `remove_liquidity`
 
@@ -110,6 +108,7 @@ Burns LP tokens to withdraw a proportional share of both tokens. Withdrawals rem
 
 ```
 Pool PDA  seeds: ["pool", mint_a, mint_b]
+Pool PDA  seeds: ["pool", lp_mint]
 ├── token_mint_a   — Token A mint address
 ├── token_mint_b   — Token B mint address
 ├── vault_a        — Pool's ATA for token A (owned by pool PDA)

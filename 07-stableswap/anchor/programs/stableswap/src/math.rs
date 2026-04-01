@@ -1,27 +1,98 @@
-//! StableSwap invariant math, LP issuance math, and adaptive fee helpers.
+//! StableSwap invariant math and LP issuance helpers.
 
 use crate::constants::{BASIS_POINTS_DIVISOR, MAX_ITERATIONS};
+use crate::dynamic_fees::calculate_dynamic_fee_bps;
 use crate::errors::StableSwapError;
 use anchor_lang::prelude::*;
 
-// ─── Stableswap invariant ────────────────────────────────────────────────────
+// ============================================================================
+// STABLESWAP MATH
+// ============================================================================
 //
-// For a 2-token pool the StableSwap invariant is:
+// This file contains the mathematical core of the StableSwap AMM.
+// Understanding this math is the key to understanding how the protocol works.
 //
-//   4·A·(x + y) + D  =  4·A·D + D³/(4·x·y)
+// BACKGROUND: Why StableSwap?
+//
+// Uniswap uses the "constant product" formula:
+//
+//   x * y = k
+//
+// That works well for volatile assets, but it is inefficient for stablecoins.
+//
+// Example with a constant-product AMM:
+// - Pool: 1,000,000 USDC and 1,000,000 USDT
+// - k = 1,000,000 * 1,000,000 = 10^12
+// - Swap 10,000 USDC for USDT
+// - New USDC reserve: 1,010,000
+// - New USDT reserve: 10^12 / 1,010,000 = 990,099
+// - Output: 1,000,000 - 990,099 = 9,901 USDT
+//
+// That is roughly 1% slippage for a 1% trade, which is too expensive for
+// assets that are expected to remain near the same price.
+//
+// StableSwap does much better for correlated assets. The curve is:
+// - Flat in the middle, where the pair should trade near 1:1
+// - Curved at the edges, so the pool still protects itself when imbalanced
+//
+// You can think of it as blending two extremes:
+// - Constant sum near the peg, which minimizes unnecessary slippage
+// - Constant product further from the peg, which prevents the pool from being
+//   completely drained when the pair moves off balance
+//
+// THE STABLESWAP INVARIANT
+//
+// In the general n-token form:
+//
+//   A * n^n * sum(x_i) + D = A * D * n^n + D^(n+1) / (n^n * prod(x_i))
 //
 // Where:
-//   A  = amplification coefficient
-//   x  = reserve of token 0
-//   y  = reserve of token 1
-//   D  = total pool value (invariant)
+// - A = amplification coefficient
+// - n = number of tokens
+// - x_i = reserve of token i
+// - D = the invariant, which represents the pool's normalized total value
 //
-// When A → ∞  the curve approaches constant-sum  (x + y = D, zero slippage)
-// When A → 0  the curve approaches constant-product (x·y = k, high slippage)
+// For a 2-token pool, the equation simplifies to:
 //
-// For n=2 tokens the general Curve formula simplifies to this form.
-// We use Newton–Raphson iteration to solve for D and y.
-// ─────────────────────────────────────────────────────────────────────────────
+//   4A(x + y) + D = 4AD + D^3 / (4xy)
+//
+// The A parameter blends between two extremes:
+// - A -> 0: the product term dominates, so the curve behaves like
+//   constant product
+// - A -> infinity: the amplified sum term dominates, so the curve behaves
+//   like constant sum and D approaches x + y
+//
+// WHAT IS D?
+//
+// D is the "total value" of the pool in a normalized way. If all tokens were
+// equally priced, D is the amount you would intuitively expect the pool to be
+// worth.
+//
+// For a balanced pool with 1M of each token:
+//
+//   D ≈ 2,000,000
+//
+// During swaps, D stays constant. That is what "invariant" means.
+// During add/remove liquidity operations, D increases or decreases.
+//
+// WHY NEWTON'S METHOD?
+//
+// The invariant is polynomial in D and y, so there is no simple closed-form
+// solution we want to use on chain. We instead use Newton-Raphson iteration:
+//
+// 1. Start with an initial guess
+// 2. Measure how far off that guess is
+// 3. Compute a better next guess
+// 4. Repeat until the value stabilizes
+//
+// In this implementation:
+// - `compute_d` starts with D = x + y
+// - `compute_y` starts with y = D
+// - Both iterations stop once the answer changes by at most 1 unit
+//
+// This usually converges quickly for the pool sizes and amplification factors
+// used in stablecoin markets.
+// ============================================================================
 
 /// Fully priced swap result returned by the math layer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,6 +108,10 @@ pub struct SwapQuote {
 /// Compute the StableSwap invariant D given two reserves and amplification A.
 ///
 /// Uses Newton–Raphson iteration starting from D = x + y.
+/// Conceptually:
+/// 1. Guess that the pool's total value is the sum of reserves.
+/// 2. Refine that guess using the invariant equation.
+/// 3. Repeat until the guess stops moving.
 ///
 /// # Errors
 /// Returns [`StableSwapError::EmptyPool`] if either reserve is zero.
@@ -77,6 +152,10 @@ pub fn compute_d(reserve_a: u128, reserve_b: u128, amp: u128) -> Result<u128> {
             .ok_or(StableSwapError::MathOverflow)?;
 
         // Newton step:
+        // This is algebraically equivalent to:
+        //   D_next = D - f(D) / f'(D)
+        // but written in a reduced form that is cheaper and safer to evaluate
+        // with checked integer arithmetic on chain.
         // D = (ann·S + D_P·2) · D / ((ann - 1)·D + 3·D_P)
         let numerator = ann
             .checked_mul(s)
@@ -109,8 +188,13 @@ pub fn compute_d(reserve_a: u128, reserve_b: u128, amp: u128) -> Result<u128> {
 /// Given a new reserve for token i, compute the new reserve for token j
 /// such that the invariant D is preserved.
 ///
-/// Solves:   y² + c·y = b·y + c  (Newton–Raphson)
+/// Solves:   y² + c = y(2y + b - D)  via Newton–Raphson
 /// where c and b are derived from D and the other reserves.
+///
+/// In swap terms:
+/// - the input reserve moves first because the trader adds tokens in
+/// - D is kept constant
+/// - we solve for the output reserve that keeps the pool on the same curve
 ///
 /// # Arguments
 /// * `reserve_other` - Current reserve of the token we are NOT solving for
@@ -143,7 +227,7 @@ pub fn compute_y(reserve_other: u128, d: u128, amp: u128) -> Result<u128> {
         )
         .ok_or(StableSwapError::MathOverflow)?;
 
-    // Newton–Raphson: y = (y² + c) / (2y + b - D)
+    // Newton–Raphson update for the output reserve.
     let mut y = d;
 
     for _ in 0..MAX_ITERATIONS {
@@ -175,79 +259,14 @@ pub fn compute_y(reserve_other: u128, d: u128, amp: u128) -> Result<u128> {
     Err(StableSwapError::ConvergenceFailed.into())
 }
 
-/// Compute post-trade imbalance in basis points for two oracle-valued sides.
-fn calculate_value_imbalance_bps(value_a: u128, value_b: u128) -> Result<u128> {
-    let total_value = value_a
-        .checked_add(value_b)
-        .ok_or(StableSwapError::MathOverflow)?;
-
-    if total_value == 0 {
-        return Ok(0);
-    }
-
-    Ok(value_a
-        .abs_diff(value_b)
-        .checked_mul(BASIS_POINTS_DIVISOR)
-        .ok_or(StableSwapError::MathOverflow)?
-        .checked_div(total_value)
-        .ok_or(StableSwapError::MathOverflow)?)
-}
-
-/// Increase fees as the pool becomes more imbalanced relative to the oracle.
-///
-/// The fee ramps linearly from `base_fee_bps` to `max_dynamic_fee_bps` as
-/// either the oracle-weighted reserve imbalance or the oracle cross-price
-/// deviation approaches the configured depeg threshold.
-pub fn calculate_dynamic_fee_bps(
-    base_fee_bps: u16,
-    max_dynamic_fee_bps: u16,
-    new_reserve_in: u128,
-    new_reserve_out: u128,
-    oracle_price_in: u128,
-    oracle_price_out: u128,
-    depeg_threshold_bps: u16,
-) -> Result<u16> {
-    require!(
-        base_fee_bps <= max_dynamic_fee_bps,
-        StableSwapError::InvalidFeeConfig
-    );
-    require!(
-        depeg_threshold_bps > 0,
-        StableSwapError::InvalidDepegThreshold
-    );
-
-    let post_value_in = new_reserve_in
-        .checked_mul(oracle_price_in)
-        .ok_or(StableSwapError::MathOverflow)?;
-    let post_value_out = new_reserve_out
-        .checked_mul(oracle_price_out)
-        .ok_or(StableSwapError::MathOverflow)?;
-
-    let imbalance_bps = calculate_value_imbalance_bps(post_value_in, post_value_out)?;
-    let oracle_ratio_bps = oracle_price_in
-        .checked_mul(BASIS_POINTS_DIVISOR)
-        .ok_or(StableSwapError::MathOverflow)?
-        .checked_div(oracle_price_out)
-        .ok_or(StableSwapError::MathOverflow)?;
-    let oracle_deviation_bps = oracle_ratio_bps.abs_diff(BASIS_POINTS_DIVISOR);
-    let stress_bps = imbalance_bps.max(oracle_deviation_bps);
-    let stress_cap = stress_bps.min(depeg_threshold_bps as u128);
-    let dynamic_range = (max_dynamic_fee_bps - base_fee_bps) as u128;
-
-    let effective_fee = (base_fee_bps as u128)
-        .checked_add(
-            dynamic_range
-                .checked_mul(stress_cap)
-                .ok_or(StableSwapError::MathOverflow)?
-                .checked_div(depeg_threshold_bps as u128)
-                .ok_or(StableSwapError::MathOverflow)?,
-        )
-        .ok_or(StableSwapError::MathOverflow)?;
-
-    Ok(effective_fee.min(max_dynamic_fee_bps as u128) as u16)
-}
-
 /// Calculate the quoted output and adaptive fee for a StableSwap trade.
+///
+/// This function follows the standard StableSwap swap flow:
+/// 1. Compute the current invariant D from the existing reserves.
+/// 2. Add the trader's input amount to the input-side reserve.
+/// 3. Solve for the new output-side reserve that preserves D.
+/// 4. The raw output is the amount removed from the output reserve.
+/// 5. Apply dynamic fees based on post-trade imbalance and oracle conditions.
 ///
 /// # Arguments
 /// * `reserve_in` - Current reserve of the input token.
@@ -313,6 +332,9 @@ pub fn calculate_swap_output(
 
 /// Compute how many LP tokens to mint for a deposit.
 ///
+/// LP issuance is based on how much the invariant D grows, not just on one
+/// token balance. That keeps LP accounting aligned with the StableSwap curve.
+///
 /// On the **first deposit** (lp_supply == 0) we mint `D - MINIMUM_LIQUIDITY`
 /// tokens and lock MINIMUM_LIQUIDITY as virtual dead shares to prevent
 /// the first-depositor inflation attack.
@@ -355,6 +377,45 @@ pub fn calculate_lp_mint_amount(
         .min(u64::MAX as u128) as u64;
 
     Ok(lp_to_mint)
+}
+
+/// Compute the proportional token amounts owed for an LP burn.
+///
+/// Withdrawals in this pool are intentionally dual-sided only: an LP burns a
+/// share of the total supply and receives that same share of each reserve.
+/// This prevents the instruction from becoming a single-sided exit path.
+///
+/// The caller should pass the live reserves for both tokens and the LP supply
+/// adjusted for the protocol's virtual dead shares.
+pub fn calculate_withdraw_amounts(
+    reserves: &[u128],
+    lp_amount: u128,
+    adjusted_supply: u128,
+) -> Result<Vec<u64>> {
+    require!(reserves.len() == 2, StableSwapError::InvalidVault);
+    require!(lp_amount > 0, StableSwapError::ZeroAmount);
+    require!(adjusted_supply > 0, StableSwapError::EmptyPool);
+    require!(
+        reserves.iter().all(|reserve| *reserve > 0),
+        StableSwapError::EmptyPool
+    );
+
+    let mut withdraw_amounts = Vec::with_capacity(reserves.len());
+    for reserve in reserves {
+        let amount = reserve
+            .checked_mul(lp_amount)
+            .ok_or(StableSwapError::MathOverflow)?
+            .checked_div(adjusted_supply)
+            .ok_or(StableSwapError::MathOverflow)?;
+        withdraw_amounts.push(amount.min(u64::MAX as u128) as u64);
+    }
+
+    require!(
+        withdraw_amounts.iter().all(|amount| *amount > 0),
+        StableSwapError::SingleSidedWithdrawalNotAllowed
+    );
+
+    Ok(withdraw_amounts)
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -449,31 +510,23 @@ mod tests {
         assert!(lp < 2_100_000_000u64);
     }
 
-    /// Adaptive fees should remain low near peg and increase when imbalanced.
+    /// LP burns must return a proportional share of both reserves.
     #[test]
-    fn test_dynamic_fee_scales_with_imbalance() {
-        let balanced_fee = calculate_dynamic_fee_bps(
-            4,
-            100,
-            1_000_000,
-            1_000_000,
-            1_000_000_000,
-            1_000_000_000,
-            500,
-        )
-        .unwrap();
-        let imbalanced_fee = calculate_dynamic_fee_bps(
-            4,
-            100,
-            1_400_000,
-            600_000,
-            1_000_000_000,
-            1_000_000_000,
-            500,
-        )
-        .unwrap();
+    fn test_calculate_withdraw_amounts_proportional() {
+        let withdraw_amounts =
+            calculate_withdraw_amounts(&[1_000_000u128, 1_000_000u128], 100_000, 1_000_000)
+                .unwrap();
 
-        assert_eq!(balanced_fee, 4);
-        assert!(imbalanced_fee > balanced_fee);
+        assert_eq!(withdraw_amounts, vec![100_000u64, 100_000u64]);
+    }
+
+    /// Dust burns that would collapse into a one-sided exit are rejected.
+    #[test]
+    fn test_calculate_withdraw_amounts_rejects_single_sided_rounding() {
+        let err = calculate_withdraw_amounts(&[1u128, 1_000_000u128], 1, 1_000_000).unwrap_err();
+
+        assert!(err
+            .to_string()
+            .contains("Single-sided withdrawals are not supported"));
     }
 }

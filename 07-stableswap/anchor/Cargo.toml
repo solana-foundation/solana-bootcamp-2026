@@ -2,6 +2,12 @@
 members = ["programs/*"]
 resolver = "2"
 
+[patch.crates-io]
+solana-shred-version = { path = "vendor/solana-shred-version-3.0.1" }
+solana-cluster-type = { path = "vendor/solana-cluster-type-3.1.0" }
+solana-epoch-rewards = { path = "vendor/solana-epoch-rewards-3.0.1" }
+solana-slot-hashes = { path = "vendor/solana-slot-hashes-3.0.1" }
+
 [profile.release]
 overflow-checks = true
 lto = "fat"

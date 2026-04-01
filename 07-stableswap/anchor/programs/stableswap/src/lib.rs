@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 
 /// Shared constants used across invariant, fee, and oracle logic.
 pub mod constants;
+/// Adaptive fee calculations used by swap pricing.
+pub mod dynamic_fees;
 /// Program-specific error codes returned by Anchor instructions.
 pub mod errors;
 /// Instruction account contexts and handlers.
@@ -82,7 +84,7 @@ pub mod stableswap {
         amount_b: u64,
         min_lp_out: u64,
     ) -> Result<()> {
-        instructions::add_liquidity::add_liquidity_handler(ctx, amount_a, amount_b, min_lp_out)
+        instructions::modify_liquidity::add_liquidity_handler(ctx, amount_a, amount_b, min_lp_out)
     }
 
     /// Burn LP tokens to withdraw a proportional share of both tokens.
@@ -97,10 +99,18 @@ pub mod stableswap {
         min_a: u64,
         min_b: u64,
     ) -> Result<()> {
-        instructions::remove_liquidity::remove_liquidity_handler(ctx, lp_amount, min_a, min_b)
+        instructions::modify_liquidity::remove_liquidity_handler(ctx, lp_amount, min_a, min_b)
     }
 
-    /// Swap token A for token B or token B for token A.
+    /// Check whether either stablecoin has moved outside the pool's peg band.
+    ///
+    /// This surfaces the same oracle-based halt condition used by swaps and
+    /// deposits, but as a standalone instruction for monitoring or preflight.
+    pub fn check_depeg(ctx: Context<CheckDepeg>) -> Result<()> {
+        instructions::check_depeg::check_depeg_handler(ctx)
+    }
+
+    /// Swap one pool token for the other.
     ///
     /// Uses the StableSwap invariant for extremely low slippage when both
     /// tokens trade near parity, while Pyth oracle checks and adaptive fees
@@ -109,13 +119,15 @@ pub mod stableswap {
     /// # Arguments
     /// * `amount_in`      — Input amount to sell.
     /// * `min_amount_out` — Minimum output amount (slippage guard).
-    /// * `a_to_b`         — `true` for A→B, `false` for B→A.
-    pub fn swap(
-        ctx: Context<Swap>,
+    /// * `input_index`    — Pool token index to sell.
+    /// * `output_index`   — Pool token index to receive.
+    pub fn swap<'info>(
+        ctx: Context<'_, '_, '_, 'info, Swap<'info>>,
         amount_in: u64,
         min_amount_out: u64,
-        a_to_b: bool,
+        input_index: u8,
+        output_index: u8,
     ) -> Result<()> {
-        instructions::swap::swap_handler(ctx, amount_in, min_amount_out, a_to_b)
+        instructions::swap::swap_handler(ctx, amount_in, min_amount_out, input_index, output_index)
     }
 }

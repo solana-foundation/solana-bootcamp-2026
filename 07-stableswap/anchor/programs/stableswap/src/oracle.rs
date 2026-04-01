@@ -1,4 +1,31 @@
 //! Pyth oracle helpers used to enforce peg protection and normalize prices.
+//
+// This module handles reading prices from Pyth Network oracles for depegging
+// detection. Pyth is a decentralized oracle network that publishes prices from
+// trusted data sources.
+//
+// WHY USE ORACLES?
+//
+// The AMM only knows its internal pool prices, which come from reserve ratios.
+// External market prices can differ, especially during a depeg event.
+// Oracles tell us what the "real world" price is, so the program can detect
+// when one of the assets is no longer behaving like a stablecoin.
+//
+// PYTH BASICS
+//
+// Each asset has a price feed account on Solana.
+// That account contains:
+// - price
+// - confidence interval
+// - exponent
+// - timestamp
+//
+// Pyth stores prices as integers with an exponent. For example:
+// - `99_850_000` with exponent `-8` represents `0.99850000`
+//
+// This module reads those raw values, validates that the account really is a
+// Pyth price account, checks that the data is fresh enough, and then normalizes
+// the result into the program's shared fixed-point scale before depeg checks.
 
 use std::mem::size_of;
 
@@ -159,8 +186,7 @@ pub fn load_pair_status(
 
     let peg_delta_a_bps = calculate_peg_delta_bps(price_a)?;
     let peg_delta_b_bps = calculate_peg_delta_bps(price_b)?;
-    let should_pause = peg_delta_a_bps > depeg_threshold_bps as u128
-        || peg_delta_b_bps > depeg_threshold_bps as u128;
+    let should_pause = check_depeg(price_a, price_b, depeg_threshold_bps);
 
     Ok(OracleStatus {
         price_a,
@@ -266,6 +292,36 @@ pub fn calculate_peg_delta_bps(price: u128) -> Result<u128> {
         .ok_or(StableSwapError::MathOverflow)?)
 }
 
+/// Check whether either normalized stablecoin price has drifted too far from $1.
+///
+/// This helper is intentionally lightweight:
+/// 1. Compute the acceptable price band around the target stable price.
+/// 2. Check token A against that band.
+/// 3. Check token B against that band.
+/// 4. Return `true` if either token has depegged.
+///
+/// Prices are expected in the program's normalized oracle scale.
+pub fn check_depeg(
+    price_a_normalized: u128,
+    price_b_normalized: u128,
+    max_deviation_bps: u16,
+) -> bool {
+    const ONE_DOLLAR: u128 = TARGET_STABLE_PRICE;
+    const BPS_DENOMINATOR: u128 = BASIS_POINTS_DIVISOR;
+
+    let max_deviation = ONE_DOLLAR
+        .saturating_mul(max_deviation_bps as u128)
+        .saturating_div(BPS_DENOMINATOR);
+
+    let lower_bound = ONE_DOLLAR.saturating_sub(max_deviation);
+    let upper_bound = ONE_DOLLAR.saturating_add(max_deviation);
+
+    let a_depegged = price_a_normalized < lower_bound || price_a_normalized > upper_bound;
+    let b_depegged = price_b_normalized < lower_bound || price_b_normalized > upper_bound;
+
+    a_depegged || b_depegged
+}
+
 /// Compute `10^exponent` using checked integer arithmetic.
 fn pow10(exponent: u32) -> Result<u128> {
     let mut value = 1u128;
@@ -293,6 +349,14 @@ mod tests {
     fn test_calculate_peg_delta_bps() {
         assert_eq!(calculate_peg_delta_bps(1_000_000_000).unwrap(), 0);
         assert_eq!(calculate_peg_delta_bps(980_000_000).unwrap(), 200);
+    }
+
+    /// The boolean depeg helper should flag prices outside the allowed band.
+    #[test]
+    fn test_check_depeg() {
+        assert!(!check_depeg(1_000_000_000, 999_000_000, 200));
+        assert!(check_depeg(970_000_000, 1_000_000_000, 200));
+        assert!(check_depeg(1_000_000_000, 1_030_000_000, 200));
     }
 
     /// Price normalization should preserve a 1.0 value across common Pyth exponents.

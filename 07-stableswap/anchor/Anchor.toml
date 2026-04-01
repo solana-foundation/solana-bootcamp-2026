@@ -16,7 +16,7 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn jest"
+test = "cargo test -p stableswap --test litesvm"
 
 [hooks]
 

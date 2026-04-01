@@ -1,5 +1,8 @@
 //! Constants that parameterize pool safety checks and fixed-point math.
 
+/// StableSwap pools in this example always contain exactly two tokens.
+pub const NUM_TOKENS: usize = 2;
+
 /// Dead shares locked on first deposit to prevent LP inflation attacks.
 /// Equivalent to Uniswap V2's MINIMUM_LIQUIDITY.
 pub const MINIMUM_LIQUIDITY: u64 = 1_000;
@@ -31,3 +34,7 @@ pub const TARGET_STABLE_PRICE: u128 = ORACLE_PRICE_SCALE;
 
 /// Internal exponent associated with ORACLE_PRICE_SCALE.
 pub const ORACLE_TARGET_EXPONENT: i32 = -9;
+
+/// Default maximum age accepted for Pyth prices when the pool checks oracle
+/// health. The current state model does not store this value per pool.
+pub const DEFAULT_MAX_PRICE_AGE_SEC: u64 = 60;

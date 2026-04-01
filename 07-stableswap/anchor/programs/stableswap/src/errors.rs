@@ -53,6 +53,22 @@ pub enum StableSwapError {
     #[msg("Initial liquidity too small")]
     InsufficientInitialLiquidity,
 
+    /// Liquidity withdrawals must redeem a proportional share of both assets.
+    #[msg("Single-sided withdrawals are not supported; LP exits must stay proportional")]
+    SingleSidedWithdrawalNotAllowed,
+
+    /// The caller referenced a token slot outside the supported token list.
+    #[msg("Invalid token index")]
+    InvalidTokenIndex,
+
+    /// Swapping a token into itself is always nonsensical.
+    #[msg("Input and output token must be different")]
+    SameTokenSwap,
+
+    /// The swap instruction requires the expected remaining account layout.
+    #[msg("Invalid remaining accounts for swap instruction")]
+    InvalidRemainingAccounts,
+
     /// A supplied token vault does not match the pool configuration.
     #[msg("Invalid vault account")]
     InvalidVault,
@@ -68,6 +84,18 @@ pub enum StableSwapError {
     /// The provided Pyth account failed key or layout validation.
     #[msg("Invalid oracle account")]
     InvalidOracleAccount,
+
+    /// The provided system program account does not match the canonical ID.
+    #[msg("Invalid system program account")]
+    InvalidSystemProgram,
+
+    /// The provided SPL token program account does not match the canonical ID.
+    #[msg("Invalid token program account")]
+    InvalidTokenProgram,
+
+    /// The provided associated token program account does not match the canonical ID.
+    #[msg("Invalid associated token program account")]
+    InvalidAssociatedTokenProgram,
 
     /// The oracle value is older than the configured freshness threshold.
     #[msg("Oracle price is stale")]
