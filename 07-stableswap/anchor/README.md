@@ -1,6 +1,6 @@
 # StableSwap AMM
 
-A two-token liquidity pool optimized for stablecoin pairs, built with [Anchor](https://www.anchor-lang.com/) on Solana. Implements the [Curve StableSwap invariant](https://curve.fi/files/stableswap-paper.pdf) to achieve dramatically lower slippage than constant-product AMMs when swapping similarly-priced assets (e.g. USDC/USDT).
+A two-token liquidity pool optimized for stablecoin pairs, built with [Anchor](https://www.anchor-lang.com/) on Solana. It uses a Curve-style hybrid invariant with Newton's method, adaptive fees, and Pyth-based depeg protection so the pool behaves like a stable swap rather than a constant-product AMM.
 
 ## How It Works
 
@@ -10,7 +10,7 @@ Standard AMMs (Uniswap-style `x·y = k`) have significant price impact even for 
 4·A·(x + y) + D  =  4·A·D + D³ / (4·x·y)
 ```
 
-concentrates liquidity around the peg, giving near-zero slippage for balanced swaps while still self-correcting if the peg breaks.
+concentrates liquidity around the peg, flattening the curve near 1:1 and eliminating unnecessary slippage for balanced stablecoin trades while still self-correcting as the pool drifts away from parity.
 
 The **amplification parameter A** controls the trade-off:
 - **High A (100–2000):** nearly flat curve, minimal slippage near peg — ideal for USDC/USDT
@@ -48,10 +48,12 @@ yarn install
 anchor test
 ```
 
-Tests cover the full pool lifecycle with a local validator:
+Rust unit tests cover invariant math, LP minting, adaptive fee escalation, and oracle peg checks. Full integration testing now requires local Pyth-compatible price feed fixtures:
 - Pool initialization
 - Adding initial and subsequent liquidity
 - Swapping A→B and B→A
+- Dynamic fee protection on swaps
+- Oracle-enforced depeg pauses on swaps and deposits
 - Slippage protection on swaps and withdrawals
 - Removing liquidity
 - StableSwap vs constant-product efficiency comparison
@@ -65,9 +67,12 @@ Creates a new pool for a token A / token B pair.
 | Argument | Type | Description |
 |----------|------|-------------|
 | `amplification` | `u64` | A parameter (1–1,000,000). Typical: 100–2000 for stablecoins. |
-| `fee_bps` | `u16` | Swap fee in basis points (e.g. `4` = 0.04%). |
+| `base_fee_bps` | `u16` | Minimum swap fee in basis points. |
+| `max_dynamic_fee_bps` | `u16` | Fee cap when the pool becomes imbalanced. |
+| `depeg_threshold_bps` | `u16` | Maximum allowed drift from $1 before swaps and deposits halt. |
+| `max_price_age_sec` | `u64` | Maximum accepted Pyth price age. |
 
-Automatically creates the pool PDA, LP mint, and two vault ATAs.
+Automatically creates the pool PDA, LP mint, two vault ATAs, and stores the two Pyth feed addresses used to guard the pool.
 
 ### `add_liquidity`
 
@@ -83,7 +88,7 @@ The first deposit establishes the initial price. Subsequent deposits can be imba
 
 ### `swap`
 
-Exchanges one token for the other using the StableSwap invariant.
+Exchanges one token for the other using the StableSwap invariant. Fees are raised dynamically as the post-trade pool becomes more imbalanced relative to the Pyth oracle prices.
 
 | Argument | Type | Description |
 |----------|------|-------------|
@@ -93,7 +98,7 @@ Exchanges one token for the other using the StableSwap invariant.
 
 ### `remove_liquidity`
 
-Burns LP tokens to withdraw a proportional share of both tokens.
+Burns LP tokens to withdraw a proportional share of both tokens. Withdrawals remain available even when swaps/deposits are halted by oracle risk checks.
 
 | Argument | Type | Description |
 |----------|------|-------------|
@@ -110,12 +115,19 @@ Pool PDA  seeds: ["pool", mint_a, mint_b]
 ├── vault_a        — Pool's ATA for token A (owned by pool PDA)
 ├── vault_b        — Pool's ATA for token B (owned by pool PDA)
 ├── lp_mint        — LP token mint (authority = pool PDA)
-├── amplification  — A parameter
-└── fee_bps        — Swap fee
+├── amplification        — Hybrid invariant amplification factor
+├── base_fee_bps         — Minimum fee
+├── max_dynamic_fee_bps  — Adaptive fee cap
+├── depeg_threshold_bps  — Oracle pause band
+├── max_price_age_sec    — Oracle freshness guard
+├── oracle_price_feed_a  — Pyth price feed for token A
+└── oracle_price_feed_b  — Pyth price feed for token B
 ```
 
 ## Security
 
 - **LP inflation attack prevention:** the first deposit locks `MINIMUM_LIQUIDITY = 1000` as virtual dead shares, ensuring an attacker cannot profit by donating dust to manipulate the LP price
 - **Slippage guards:** all instructions accept user-specified minimums and revert if not met
+- **Dynamic fee protection:** fees rise as the pool moves away from the oracle-implied balance, which reduces pure arbitrage extraction against LPs
+- **Pyth oracle protection:** swaps and deposits halt when either stablecoin moves outside the configured peg band or the oracle price goes stale
 - **Overflow protection:** all math uses `checked_*` arithmetic; Newton–Raphson convergence is capped at 255 iterations

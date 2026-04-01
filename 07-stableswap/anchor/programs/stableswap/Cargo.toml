@@ -22,6 +22,7 @@ custom-panic = []
 [dependencies]
 anchor-lang = { version = "1.0.0-rc.2", features = ["init-if-needed"] }
 anchor-spl = { version = "1.0.0-rc.2", features = ["token", "associated_token"] }
+bytemuck = { version = "1", features = ["derive"] }
 
 # Pin base64ct to avoid edition2024 requirement
 base64ct = ">=1.0.0, <1.8.0"

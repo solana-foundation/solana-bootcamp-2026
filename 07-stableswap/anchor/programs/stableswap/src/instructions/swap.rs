@@ -1,8 +1,11 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+//! Execute a StableSwap trade using oracle-aware dynamic fees.
+
 use crate::errors::StableSwapError;
 use crate::math::calculate_swap_output;
+use crate::oracle::load_pair_status;
 use crate::state::Pool;
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 /// Accounts required to execute a swap.
 #[derive(Accounts)]
@@ -43,9 +46,16 @@ pub struct Swap<'info> {
     #[account(mut)]
     pub user_output: Account<'info, TokenAccount>,
 
+    /// CHECK: validated against the stored pool config and parsed as a Pyth price account.
+    pub oracle_price_feed_a: UncheckedAccount<'info>,
+
+    /// CHECK: validated against the stored pool config and parsed as a Pyth price account.
+    pub oracle_price_feed_b: UncheckedAccount<'info>,
+
     /// The swapper.
     pub user: Signer<'info>,
 
+    /// SPL Token program used for token transfer CPI calls.
     pub token_program: Program<'info, Token>,
 }
 
@@ -64,31 +74,77 @@ pub fn swap_handler(
     require!(amount_in > 0, StableSwapError::ZeroAmount);
 
     let pool = &ctx.accounts.pool;
+    let oracle_status = load_pair_status(
+        &pool.oracle_price_feed_a,
+        &pool.oracle_price_feed_b,
+        &ctx.accounts.oracle_price_feed_a.to_account_info(),
+        &ctx.accounts.oracle_price_feed_b.to_account_info(),
+        pool.max_price_age_sec,
+        pool.depeg_threshold_bps,
+    )?;
+    require!(!oracle_status.should_pause, StableSwapError::PoolPaused);
+
     let reserve_a = ctx.accounts.vault_a.amount as u128;
     let reserve_b = ctx.accounts.vault_b.amount as u128;
     let amp = pool.amplification as u128;
-    let fee_bps = pool.fee_bps;
+    let base_fee_bps = pool.base_fee_bps;
+    let max_dynamic_fee_bps = pool.max_dynamic_fee_bps;
 
     // Both reserves must be non-zero for a valid swap
     require!(reserve_a > 0 && reserve_b > 0, StableSwapError::EmptyPool);
 
-    // Determine which side is in and which is out
-    let (reserve_in, reserve_out) = if a_to_b {
-        (reserve_a, reserve_b)
+    let expected_input_mint = if a_to_b {
+        pool.token_mint_a
     } else {
-        (reserve_b, reserve_a)
+        pool.token_mint_b
+    };
+    let expected_output_mint = if a_to_b {
+        pool.token_mint_b
+    } else {
+        pool.token_mint_a
+    };
+    require_keys_eq!(
+        ctx.accounts.user_input.mint,
+        expected_input_mint,
+        StableSwapError::InvalidMint
+    );
+    require_keys_eq!(
+        ctx.accounts.user_output.mint,
+        expected_output_mint,
+        StableSwapError::InvalidMint
+    );
+
+    // Determine which side is in and which is out
+    let (reserve_in, reserve_out, oracle_price_in, oracle_price_out) = if a_to_b {
+        (
+            reserve_a,
+            reserve_b,
+            oracle_status.price_a,
+            oracle_status.price_b,
+        )
+    } else {
+        (
+            reserve_b,
+            reserve_a,
+            oracle_status.price_b,
+            oracle_status.price_a,
+        )
     };
 
-    let (amount_out, fee) = calculate_swap_output(
+    let quote = calculate_swap_output(
         reserve_in,
         reserve_out,
         amount_in as u128,
         amp,
-        fee_bps,
+        base_fee_bps,
+        max_dynamic_fee_bps,
+        oracle_price_in,
+        oracle_price_out,
+        pool.depeg_threshold_bps,
     )?;
 
     require!(
-        amount_out >= min_amount_out as u128,
+        quote.amount_out >= min_amount_out as u128,
         StableSwapError::SlippageExceeded
     );
 
@@ -124,7 +180,7 @@ pub fn swap_handler(
                 },
                 &[seeds],
             ),
-            amount_out as u64,
+            quote.amount_out as u64,
         )?;
     } else {
         // Transfer B in: user → vault_b
@@ -151,16 +207,19 @@ pub fn swap_handler(
                 },
                 &[seeds],
             ),
-            amount_out as u64,
+            quote.amount_out as u64,
         )?;
     }
 
     msg!(
-        "Swap {}: {} in → {} out (fee: {})",
+        "Swap {}: {} in → {} out (fee: {}, dynamic_fee={}bps, oracle_a={}bps, oracle_b={}bps)",
         if a_to_b { "A→B" } else { "B→A" },
         amount_in,
-        amount_out,
-        fee
+        quote.amount_out,
+        quote.fee_amount,
+        quote.dynamic_fee_bps,
+        oracle_status.peg_delta_a_bps,
+        oracle_status.peg_delta_b_bps
     );
     Ok(())
 }

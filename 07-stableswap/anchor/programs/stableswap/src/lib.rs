@@ -1,9 +1,18 @@
+//! StableSwap program entrypoint and module wiring.
+
 use anchor_lang::prelude::*;
 
+/// Shared constants used across invariant, fee, and oracle logic.
 pub mod constants;
+/// Program-specific error codes returned by Anchor instructions.
 pub mod errors;
+/// Instruction account contexts and handlers.
 pub mod instructions;
+/// StableSwap invariant and fee math.
 pub mod math;
+/// Pyth oracle parsing and peg-protection helpers.
+pub mod oracle;
+/// Persistent on-chain account state definitions.
 pub mod state;
 
 use instructions::*;
@@ -15,13 +24,14 @@ declare_id!("CorabfeniSyoc4aLcJe7t9b3RaFX5tzVWXdewU1xuA6B");
 /// ## Background
 ///
 /// Constant-product AMMs (Uniswap-style x·y=k) have significant price impact
-/// even for modest trades.  For assets that should trade at nearly equal value
-/// (USDC/USDT, mSOL/stSOL, etc.) the Curve StableSwap invariant:
+/// even for modest trades. For assets that should trade at nearly equal value
+/// (USDC/USDT, USDh/USDT, etc.) the Curve-style hybrid invariant:
 ///
 ///   4·A·(x + y) + D  =  4·A·D + D³/(4·x·y)
 ///
 /// gives dramatically lower slippage while still self-balancing when the peg
-/// breaks.  The amplification parameter A controls the trade-off:
+/// breaks. The amplification parameter A controls the trade-off:
+///
 ///   - High A (100-2000): very stable, nearly flat curve near peg
 ///   - Low A (1-10): close to constant-product, handles de-peg better
 #[program]
@@ -34,13 +44,26 @@ pub mod stableswap {
     ///
     /// # Arguments
     /// * `amplification` — A parameter (1–1,000,000). Typical: 100–2000.
-    /// * `fee_bps`        — Swap fee in basis points (e.g. 4 = 0.04%).
+    /// * `base_fee_bps`         — Minimum swap fee in basis points.
+    /// * `max_dynamic_fee_bps`  — Maximum swap fee once the pool drifts away from peg.
+    /// * `depeg_threshold_bps`  — Peg band that triggers the oracle pause.
+    /// * `max_price_age_sec`    — Maximum acceptable Pyth price age.
     pub fn initialize_pool(
         ctx: Context<InitializePool>,
         amplification: u64,
-        fee_bps: u16,
+        base_fee_bps: u16,
+        max_dynamic_fee_bps: u16,
+        depeg_threshold_bps: u16,
+        max_price_age_sec: u64,
     ) -> Result<()> {
-        instructions::initialize_pool::initialize_pool_handler(ctx, amplification, fee_bps)
+        instructions::initialize_pool::initialize_pool_handler(
+            ctx,
+            amplification,
+            base_fee_bps,
+            max_dynamic_fee_bps,
+            depeg_threshold_bps,
+            max_price_age_sec,
+        )
     }
 
     /// Deposit token A and/or token B to receive LP tokens.
@@ -80,7 +103,8 @@ pub mod stableswap {
     /// Swap token A for token B or token B for token A.
     ///
     /// Uses the StableSwap invariant for extremely low slippage when both
-    /// tokens trade near parity (the typical stablecoin case).
+    /// tokens trade near parity, while Pyth oracle checks and adaptive fees
+    /// defend LPs when the pool drifts away from fair value.
     ///
     /// # Arguments
     /// * `amount_in`      — Input amount to sell.

@@ -1,8 +1,10 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount, Transfer};
+//! Withdraw proportional liquidity from the pool.
+
 use crate::constants::MINIMUM_LIQUIDITY;
 use crate::errors::StableSwapError;
 use crate::state::Pool;
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount, Transfer};
 
 /// Accounts required to remove liquidity from a StableSwap pool.
 #[derive(Accounts)]
@@ -43,24 +45,37 @@ pub struct RemoveLiquidity<'info> {
     pub lp_mint: Account<'info, Mint>,
 
     /// Withdrawer's token A account (receives token A).
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user_token_a.mint == pool.token_mint_a @ StableSwapError::InvalidMint,
+    )]
     pub user_token_a: Account<'info, TokenAccount>,
 
     /// Withdrawer's token B account (receives token B).
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user_token_b.mint == pool.token_mint_b @ StableSwapError::InvalidMint,
+    )]
     pub user_token_b: Account<'info, TokenAccount>,
 
     /// Withdrawer's LP token account (LP tokens burned from here).
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user_lp_token.mint == pool.lp_mint @ StableSwapError::InvalidMint,
+    )]
     pub user_lp_token: Account<'info, TokenAccount>,
 
     /// The withdrawer.
     pub user: Signer<'info>,
 
+    /// SPL Token program used for burn and transfer CPI calls.
     pub token_program: Program<'info, Token>,
 }
 
 /// Burn LP tokens to withdraw a proportional share of both token A and token B.
+///
+/// Withdrawals intentionally remain oracle-independent so LPs can always exit,
+/// even when swaps and deposits are halted by depeg protection.
 ///
 /// # Arguments
 /// * `lp_amount` — LP tokens to burn.

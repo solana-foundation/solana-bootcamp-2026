@@ -1,3 +1,5 @@
+//! On-chain account state for the StableSwap pool.
+
 use anchor_lang::prelude::*;
 
 /// A two-token StableSwap liquidity pool.
@@ -22,13 +24,24 @@ pub struct Pool {
     /// StableSwap amplification coefficient (A).
     /// Controls how "stable" the curve is — higher = lower slippage near peg.
     pub amplification: u64,
-    /// Swap fee in basis points (1 bps = 0.01%)
-    pub fee_bps: u16,
+    /// Baseline swap fee in basis points (1 bps = 0.01%)
+    pub base_fee_bps: u16,
+    /// Upper bound for the adaptive fee schedule.
+    pub max_dynamic_fee_bps: u16,
+    /// Maximum allowed deviation from $1.00 before swaps/deposits are halted.
+    pub depeg_threshold_bps: u16,
+    /// Maximum oracle age tolerated for swap/deposit operations.
+    pub max_price_age_sec: u64,
+    /// Pyth price feed for token A.
+    pub oracle_price_feed_a: Pubkey,
+    /// Pyth price feed for token B.
+    pub oracle_price_feed_b: Pubkey,
     /// PDA bump seed
     pub bump: u8,
 }
 
 impl Pool {
+    /// Total account size used when initializing the pool PDA.
     pub const LEN: usize = 8   // discriminator
         + 32   // admin
         + 32   // token_mint_a
@@ -37,6 +50,11 @@ impl Pool {
         + 32   // vault_b
         + 32   // lp_mint
         + 8    // amplification
-        + 2    // fee_bps
-        + 1;   // bump
+        + 2    // base_fee_bps
+        + 2    // max_dynamic_fee_bps
+        + 2    // depeg_threshold_bps
+        + 8    // max_price_age_sec
+        + 32   // oracle_price_feed_a
+        + 32   // oracle_price_feed_b
+        + 1; // bump
 }

@@ -1,3 +1,6 @@
+//! StableSwap invariant math, LP issuance math, and adaptive fee helpers.
+
+use crate::constants::{BASIS_POINTS_DIVISOR, MAX_ITERATIONS};
 use crate::errors::StableSwapError;
 use anchor_lang::prelude::*;
 
@@ -20,6 +23,17 @@ use anchor_lang::prelude::*;
 // We use Newton–Raphson iteration to solve for D and y.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Fully priced swap result returned by the math layer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SwapQuote {
+    /// Net output that the user receives after fees.
+    pub amount_out: u128,
+    /// Fee retained by the pool, denominated in the output token.
+    pub fee_amount: u128,
+    /// Adaptive fee applied to the trade in basis points.
+    pub dynamic_fee_bps: u16,
+}
+
 /// Compute the StableSwap invariant D given two reserves and amplification A.
 ///
 /// Uses Newton–Raphson iteration starting from D = x + y.
@@ -35,13 +49,11 @@ pub fn compute_d(reserve_a: u128, reserve_b: u128, amp: u128) -> Result<u128> {
         .ok_or(StableSwapError::MathOverflow)?;
 
     // A·n^n  where n=2  →  4·A
-    let ann = amp
-        .checked_mul(4)
-        .ok_or(StableSwapError::MathOverflow)?;
+    let ann = amp.checked_mul(4).ok_or(StableSwapError::MathOverflow)?;
 
     let mut d = s;
 
-    for _ in 0..255u8 {
+    for _ in 0..MAX_ITERATIONS {
         let d_prev = d;
 
         // D_P = D³ / (4·x·y)  accumulated iteratively as:
@@ -109,15 +121,11 @@ pub fn compute_y(reserve_other: u128, d: u128, amp: u128) -> Result<u128> {
     require!(reserve_other > 0, StableSwapError::EmptyPool);
 
     // ann = 4·A  (n=2)
-    let ann = amp
-        .checked_mul(4)
-        .ok_or(StableSwapError::MathOverflow)?;
+    let ann = amp.checked_mul(4).ok_or(StableSwapError::MathOverflow)?;
 
     // b = reserve_other + D/ann
     let b = reserve_other
-        .checked_add(
-            d.checked_div(ann).ok_or(StableSwapError::MathOverflow)?,
-        )
+        .checked_add(d.checked_div(ann).ok_or(StableSwapError::MathOverflow)?)
         .ok_or(StableSwapError::MathOverflow)?;
 
     // c = D³ / (4·ann·reserve_other)
@@ -138,7 +146,7 @@ pub fn compute_y(reserve_other: u128, d: u128, amp: u128) -> Result<u128> {
     // Newton–Raphson: y = (y² + c) / (2y + b - D)
     let mut y = d;
 
-    for _ in 0..255u8 {
+    for _ in 0..MAX_ITERATIONS {
         let y_prev = y;
 
         let numerator = y
@@ -167,17 +175,101 @@ pub fn compute_y(reserve_other: u128, d: u128, amp: u128) -> Result<u128> {
     Err(StableSwapError::ConvergenceFailed.into())
 }
 
-/// Calculate the output amount for a swap, after applying the fee.
+/// Compute post-trade imbalance in basis points for two oracle-valued sides.
+fn calculate_value_imbalance_bps(value_a: u128, value_b: u128) -> Result<u128> {
+    let total_value = value_a
+        .checked_add(value_b)
+        .ok_or(StableSwapError::MathOverflow)?;
+
+    if total_value == 0 {
+        return Ok(0);
+    }
+
+    Ok(value_a
+        .abs_diff(value_b)
+        .checked_mul(BASIS_POINTS_DIVISOR)
+        .ok_or(StableSwapError::MathOverflow)?
+        .checked_div(total_value)
+        .ok_or(StableSwapError::MathOverflow)?)
+}
+
+/// Increase fees as the pool becomes more imbalanced relative to the oracle.
 ///
-/// # Returns
-/// `(amount_out, fee_amount)`
+/// The fee ramps linearly from `base_fee_bps` to `max_dynamic_fee_bps` as
+/// either the oracle-weighted reserve imbalance or the oracle cross-price
+/// deviation approaches the configured depeg threshold.
+pub fn calculate_dynamic_fee_bps(
+    base_fee_bps: u16,
+    max_dynamic_fee_bps: u16,
+    new_reserve_in: u128,
+    new_reserve_out: u128,
+    oracle_price_in: u128,
+    oracle_price_out: u128,
+    depeg_threshold_bps: u16,
+) -> Result<u16> {
+    require!(
+        base_fee_bps <= max_dynamic_fee_bps,
+        StableSwapError::InvalidFeeConfig
+    );
+    require!(
+        depeg_threshold_bps > 0,
+        StableSwapError::InvalidDepegThreshold
+    );
+
+    let post_value_in = new_reserve_in
+        .checked_mul(oracle_price_in)
+        .ok_or(StableSwapError::MathOverflow)?;
+    let post_value_out = new_reserve_out
+        .checked_mul(oracle_price_out)
+        .ok_or(StableSwapError::MathOverflow)?;
+
+    let imbalance_bps = calculate_value_imbalance_bps(post_value_in, post_value_out)?;
+    let oracle_ratio_bps = oracle_price_in
+        .checked_mul(BASIS_POINTS_DIVISOR)
+        .ok_or(StableSwapError::MathOverflow)?
+        .checked_div(oracle_price_out)
+        .ok_or(StableSwapError::MathOverflow)?;
+    let oracle_deviation_bps = oracle_ratio_bps.abs_diff(BASIS_POINTS_DIVISOR);
+    let stress_bps = imbalance_bps.max(oracle_deviation_bps);
+    let stress_cap = stress_bps.min(depeg_threshold_bps as u128);
+    let dynamic_range = (max_dynamic_fee_bps - base_fee_bps) as u128;
+
+    let effective_fee = (base_fee_bps as u128)
+        .checked_add(
+            dynamic_range
+                .checked_mul(stress_cap)
+                .ok_or(StableSwapError::MathOverflow)?
+                .checked_div(depeg_threshold_bps as u128)
+                .ok_or(StableSwapError::MathOverflow)?,
+        )
+        .ok_or(StableSwapError::MathOverflow)?;
+
+    Ok(effective_fee.min(max_dynamic_fee_bps as u128) as u16)
+}
+
+/// Calculate the quoted output and adaptive fee for a StableSwap trade.
+///
+/// # Arguments
+/// * `reserve_in` - Current reserve of the input token.
+/// * `reserve_out` - Current reserve of the output token.
+/// * `amount_in` - Token amount being sold into the pool.
+/// * `amp` - StableSwap amplification coefficient.
+/// * `base_fee_bps` - Minimum fee charged on a healthy, balanced pool.
+/// * `max_dynamic_fee_bps` - Maximum fee charged under pool stress.
+/// * `oracle_price_in` - Normalized Pyth price for the input asset.
+/// * `oracle_price_out` - Normalized Pyth price for the output asset.
+/// * `depeg_threshold_bps` - Peg band used to cap fee escalation.
 pub fn calculate_swap_output(
     reserve_in: u128,
     reserve_out: u128,
     amount_in: u128,
     amp: u128,
-    fee_bps: u16,
-) -> Result<(u128, u128)> {
+    base_fee_bps: u16,
+    max_dynamic_fee_bps: u16,
+    oracle_price_in: u128,
+    oracle_price_out: u128,
+    depeg_threshold_bps: u16,
+) -> Result<SwapQuote> {
     require!(amount_in > 0, StableSwapError::ZeroAmount);
 
     let d = compute_d(reserve_in, reserve_out, amp)?;
@@ -192,17 +284,31 @@ pub fn calculate_swap_output(
         .checked_sub(new_reserve_out)
         .ok_or(StableSwapError::MathOverflow)?;
 
-    let fee = amount_out_before_fee
-        .checked_mul(fee_bps as u128)
+    let dynamic_fee_bps = calculate_dynamic_fee_bps(
+        base_fee_bps,
+        max_dynamic_fee_bps,
+        new_reserve_in,
+        new_reserve_out,
+        oracle_price_in,
+        oracle_price_out,
+        depeg_threshold_bps,
+    )?;
+
+    let fee_amount = amount_out_before_fee
+        .checked_mul(dynamic_fee_bps as u128)
         .ok_or(StableSwapError::MathOverflow)?
-        .checked_div(10_000)
+        .checked_div(BASIS_POINTS_DIVISOR)
         .ok_or(StableSwapError::MathOverflow)?;
 
     let amount_out = amount_out_before_fee
-        .checked_sub(fee)
+        .checked_sub(fee_amount)
         .ok_or(StableSwapError::MathOverflow)?;
 
-    Ok((amount_out, fee))
+    Ok(SwapQuote {
+        amount_out,
+        fee_amount,
+        dynamic_fee_bps,
+    })
 }
 
 /// Compute how many LP tokens to mint for a deposit.
@@ -228,8 +334,7 @@ pub fn calculate_lp_mint_amount(
             d > minimum_liquidity as u128,
             StableSwapError::InsufficientInitialLiquidity
         );
-        let lp_to_mint = (d - minimum_liquidity as u128)
-            .min(u64::MAX as u128) as u64;
+        let lp_to_mint = (d - minimum_liquidity as u128).min(u64::MAX as u128) as u64;
         return Ok(lp_to_mint);
     }
 
@@ -258,7 +363,7 @@ pub fn calculate_lp_mint_amount(
 mod tests {
     use super::*;
 
-    /// Balanced pool: D should equal sum of reserves.
+    /// Balanced pool: D should stay very close to the sum of reserves.
     #[test]
     fn test_compute_d_balanced() {
         let reserve = 1_000_000_000u128; // 1000 USDC (6 decimals)
@@ -272,11 +377,23 @@ mod tests {
     #[test]
     fn test_swap_low_slippage() {
         let reserve = 1_000_000_000_000u128; // 1M USDC (6 decimals)
-        let amount_in = 1_000_000u128;       // 1 USDC
-        let (out, _fee) = calculate_swap_output(reserve, reserve, amount_in, 100, 4).unwrap();
+        let amount_in = 1_000_000u128; // 1 USDC
+        let quote = calculate_swap_output(
+            reserve,
+            reserve,
+            amount_in,
+            100,
+            4,
+            100,
+            1_000_000_000,
+            1_000_000_000,
+            500,
+        )
+        .unwrap();
         // With A=100 and tiny trade vs huge pool: almost 1:1
-        assert!(out > 990_000u128);
-        assert!(out <= amount_in);
+        assert!(quote.amount_out > 990_000u128);
+        assert!(quote.amount_out <= amount_in);
+        assert_eq!(quote.dynamic_fee_bps, 4);
     }
 
     /// A large swap should still have low slippage (stablecoin advantage).
@@ -284,13 +401,25 @@ mod tests {
     fn test_swap_large_amount_low_slippage() {
         let reserve = 1_000_000_000_000u128; // 1M USDC
         let amount_in = 100_000_000_000u128; // 100k USDC swap (10% of pool)
-        let (out, _fee) = calculate_swap_output(reserve, reserve, amount_in, 100, 4).unwrap();
+        let quote = calculate_swap_output(
+            reserve,
+            reserve,
+            amount_in,
+            100,
+            4,
+            100,
+            1_000_000_000,
+            1_000_000_000,
+            500,
+        )
+        .unwrap();
         // StableSwap should give >99% output for 10% of pool swap
-        let ratio = out * 100 / amount_in;
-        assert!(ratio > 98, "Expected >98% output, got {}%", ratio);
+        let ratio = quote.amount_out * 100 / amount_in;
+        assert!(ratio >= 98, "Expected >=98% output, got {}%", ratio);
+        assert!(quote.dynamic_fee_bps > 4);
     }
 
-    /// First-deposit LP minting.
+    /// First-deposit LP minting reserves dead shares for inflation protection.
     #[test]
     fn test_lp_mint_first_deposit() {
         let amount = 1_000_000_000u128; // 1000 tokens each
@@ -299,7 +428,7 @@ mod tests {
         assert!(lp > 1_999_000_000u64);
     }
 
-    /// LP amount grows proportionally on subsequent deposits.
+    /// Subsequent LP issuance tracks the proportional increase in invariant D.
     #[test]
     fn test_lp_mint_subsequent_deposit() {
         let reserve = 1_000_000_000u128;
@@ -318,5 +447,33 @@ mod tests {
         // LP minted should be approximately equal to current supply
         assert!(lp > 1_900_000_000u64);
         assert!(lp < 2_100_000_000u64);
+    }
+
+    /// Adaptive fees should remain low near peg and increase when imbalanced.
+    #[test]
+    fn test_dynamic_fee_scales_with_imbalance() {
+        let balanced_fee = calculate_dynamic_fee_bps(
+            4,
+            100,
+            1_000_000,
+            1_000_000,
+            1_000_000_000,
+            1_000_000_000,
+            500,
+        )
+        .unwrap();
+        let imbalanced_fee = calculate_dynamic_fee_bps(
+            4,
+            100,
+            1_400_000,
+            600_000,
+            1_000_000_000,
+            1_000_000_000,
+            500,
+        )
+        .unwrap();
+
+        assert_eq!(balanced_fee, 4);
+        assert!(imbalanced_fee > balanced_fee);
     }
 }

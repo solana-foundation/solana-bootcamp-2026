@@ -1,9 +1,12 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, Transfer};
+//! Deposit liquidity into the pool after passing oracle health checks.
+
 use crate::constants::MINIMUM_LIQUIDITY;
 use crate::errors::StableSwapError;
 use crate::math::calculate_lp_mint_amount;
+use crate::oracle::load_pair_status;
 use crate::state::Pool;
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, Transfer};
 
 /// Accounts required to add liquidity to a StableSwap pool.
 #[derive(Accounts)]
@@ -44,20 +47,36 @@ pub struct AddLiquidity<'info> {
     pub lp_mint: Account<'info, Mint>,
 
     /// Depositor's token A account.
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user_token_a.mint == pool.token_mint_a @ StableSwapError::InvalidMint,
+    )]
     pub user_token_a: Account<'info, TokenAccount>,
 
     /// Depositor's token B account.
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user_token_b.mint == pool.token_mint_b @ StableSwapError::InvalidMint,
+    )]
     pub user_token_b: Account<'info, TokenAccount>,
 
     /// Depositor's LP token account (receives newly minted LP tokens).
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user_lp_token.mint == pool.lp_mint @ StableSwapError::InvalidMint,
+    )]
     pub user_lp_token: Account<'info, TokenAccount>,
+
+    /// CHECK: validated against the stored pool config and parsed as a Pyth price account.
+    pub oracle_price_feed_a: UncheckedAccount<'info>,
+
+    /// CHECK: validated against the stored pool config and parsed as a Pyth price account.
+    pub oracle_price_feed_b: UncheckedAccount<'info>,
 
     /// The depositor.
     pub user: Signer<'info>,
 
+    /// SPL Token program used for transfers and LP minting.
     pub token_program: Program<'info, Token>,
 }
 
@@ -76,13 +95,27 @@ pub fn add_liquidity_handler(
     require!(amount_a > 0 || amount_b > 0, StableSwapError::ZeroAmount);
 
     let pool = &ctx.accounts.pool;
+    let oracle_status = load_pair_status(
+        &pool.oracle_price_feed_a,
+        &pool.oracle_price_feed_b,
+        &ctx.accounts.oracle_price_feed_a.to_account_info(),
+        &ctx.accounts.oracle_price_feed_b.to_account_info(),
+        pool.max_price_age_sec,
+        pool.depeg_threshold_bps,
+    )?;
+    require!(!oracle_status.should_pause, StableSwapError::PoolPaused);
+
     let reserve_a = ctx.accounts.vault_a.amount as u128;
     let reserve_b = ctx.accounts.vault_b.amount as u128;
     let lp_supply = ctx.accounts.lp_mint.supply as u128;
     let amp = pool.amplification as u128;
 
-    let new_reserve_a = reserve_a + amount_a as u128;
-    let new_reserve_b = reserve_b + amount_b as u128;
+    let new_reserve_a = reserve_a
+        .checked_add(amount_a as u128)
+        .ok_or(StableSwapError::MathOverflow)?;
+    let new_reserve_b = reserve_b
+        .checked_add(amount_b as u128)
+        .ok_or(StableSwapError::MathOverflow)?;
 
     let lp_to_mint = calculate_lp_mint_amount(
         reserve_a,
@@ -148,10 +181,12 @@ pub fn add_liquidity_handler(
     )?;
 
     msg!(
-        "Added liquidity: a={} b={} lp_minted={}",
+        "Added liquidity: a={} b={} lp_minted={} oracle_a={}bps oracle_b={}bps",
         amount_a,
         amount_b,
-        lp_to_mint
+        lp_to_mint,
+        oracle_status.peg_delta_a_bps,
+        oracle_status.peg_delta_b_bps
     );
     Ok(())
 }

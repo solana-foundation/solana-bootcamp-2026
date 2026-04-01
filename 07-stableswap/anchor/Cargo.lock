@@ -1929,6 +1929,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "base64ct",
+ "bytemuck",
 ]
 
 [[package]]
