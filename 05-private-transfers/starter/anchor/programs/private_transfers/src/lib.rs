@@ -164,7 +164,7 @@ pub struct Deposit<'info> {
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
-    #[account(seeds = [b"pool"], bump)]
+    #[account(mut, seeds = [b"pool"], bump)]
     pub pool: Account<'info, Pool>,
 
     // Step 3: Add nullifier_set account here
