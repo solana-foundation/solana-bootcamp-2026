@@ -2,7 +2,17 @@
   "name": "stableswap",
   "version": "0.1.0",
   "license": "MIT",
+  "resolutions": {
+    "brace-expansion": "^1.1.16",
+    "browserslist": "^4.28.7",
+    "js-yaml": "^3.15.2",
+    "toml": "^4.2.0",
+    "**/jayson/ws": "^7.5.11",
+    "**/rpc-websockets/ws": "^8.21.0"
+  },
   "scripts": {
+    "postinstall": "node scripts/verify-toml.js",
+    "verify-toml": "node scripts/verify-toml.js",
     "lint:fix": "prettier */*.js \"*/**/*.{js,ts}\" -w",
     "lint": "prettier */*.js \"*/**/*.{js,ts}\" --check"
   },
