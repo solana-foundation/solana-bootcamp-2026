@@ -13,11 +13,11 @@ overrides:
   h3: 1.15.6
   hono: 4.12.25
   js-yaml: 4.3.2
-  lodash: 4.18.0
-  minimatch: 9.0.7
-  nanoid: 3.3.12
-  picomatch: 2.3.2
-  postcss: 8.5.18
+  lodash: 4.18.1
+  "minimatch@3": 3.1.3
+  "minimatch@9": 9.0.7
+  "picomatch@2": 2.3.2
+  "@tailwindcss/postcss>postcss": 8.5.18
   preact: 10.28.2
   socket.io-parser: 4.2.7
   source-map-js: 1.2.2
