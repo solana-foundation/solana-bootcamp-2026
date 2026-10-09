@@ -11,6 +11,8 @@
     "**/rpc-websockets/ws": "^8.21.0"
   },
   "scripts": {
+    "postinstall": "node scripts/verify-toml.js",
+    "verify-toml": "node scripts/verify-toml.js",
     "lint:fix": "prettier */*.js \"*/**/*.{js,ts}\" -w",
     "lint": "prettier */*.js \"*/**/*.{js,ts}\" --check"
   },
