@@ -17,5 +17,9 @@
     "prettier": "^2.6.2",
     "ts-jest": "^29.0.2",
     "typescript": "^5.7.3"
+  },
+  "resolutions": {
+    "toml": "^5.0.1",
+    "uuid": "^11.1.1"
   }
 }
